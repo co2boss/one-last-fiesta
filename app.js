@@ -1,6 +1,12 @@
-const STORAGE_KEY = 'projectFiesta.passport.v2';
-const OLD_STORAGE_KEY = 'projectFiesta.passport.v1';
+const STORAGE_KEY = 'projectFiesta.passport.current';
+const LEGACY_STORAGE_KEYS = [
+  'projectFiesta.passport.current',
+  'projectFiesta.passport.v2',
+  'projectFiesta.passport.v1',
+  'fiestaPassport'
+];
 const VISIT_KEY = 'projectFiesta.hasVisited';
+const MIGRATION_KEY = 'projectFiesta.storageMigrated.RC1_11';
 const scenes = ['invitation','passportScene','revealScene','plaza'];
 const wizardNames = ['Traveler','Signature','Frame','Spirit'];
 const $ = (id) => document.getElementById(id);
@@ -14,14 +20,53 @@ function showScene(id){
   window.scrollTo({top:0,behavior:'smooth'});
 }
 
-function getPassport(){
+function safeReadStorage(key){
   try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY)) || JSON.parse(localStorage.getItem(OLD_STORAGE_KEY));
+    const raw = localStorage.getItem(key);
+    return raw ? JSON.parse(raw) : null;
   } catch {
     return null;
   }
 }
-function savePassport(data){ localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); }
+
+function normalizePassport(data){
+  if(!data) return null;
+  const normalized = {
+    name: data.name || data.firstName || data.travelerName || 'Traveler',
+    drink: data.drink || data.favoriteDrink || '',
+    taco: data.taco || data.favoriteTaco || '',
+    song: data.song || data.walkupSong || data.walkUpSong || '',
+    fact: data.fact || data.funFact || '',
+    frame: data.frame || data.avatar || 'agave',
+    frameLabel: data.frameLabel || data.avatarLabel || '🌵 Agave',
+    vibe: data.vibe || data.personality || 'chill',
+    title: data.title || data.fiestaTitle || '',
+    description: data.description || data.titleDescription || '',
+    createdAt: data.createdAt || new Date().toISOString(),
+    version: 'RC1.11'
+  };
+  if(!normalized.title || !normalized.description){
+    const [title, description] = titleFor(normalized);
+    normalized.title = title;
+    normalized.description = description;
+  }
+  return normalized;
+}
+
+function getPassport(){
+  for(const key of LEGACY_STORAGE_KEYS){
+    const found = normalizePassport(safeReadStorage(key));
+    if(found){
+      if(key !== STORAGE_KEY || localStorage.getItem(MIGRATION_KEY) !== 'true'){
+        savePassport(found);
+        localStorage.setItem(MIGRATION_KEY, 'true');
+      }
+      return found;
+    }
+  }
+  return null;
+}
+function savePassport(data){ localStorage.setItem(STORAGE_KEY, JSON.stringify(normalizePassport(data) || data)); }
 
 function frameIcon(frame){
   return { agave:'🌵', sunset:'🌅', barrel:'🥃', campfire:'🔥', talavera:'🌮', gold:'👑' }[frame] || '🌵';
@@ -99,7 +144,7 @@ function collectPassport(){
     frameLabel: document.querySelector('.frame-option.selected')?.textContent.trim() || '🌵 Agave',
     vibe: document.querySelector('input[name="vibe"]:checked')?.value || 'chill',
     createdAt: new Date().toISOString(),
-    version: 'RC1.10'
+    version: 'RC1.11'
   };
   const [title, description] = titleFor(base);
   return { ...base, title, description };
@@ -292,9 +337,9 @@ $('passportForm')?.addEventListener('submit', (e) => {
 
 $('enterPlaza')?.addEventListener('click', () => showScene('plaza'));
 $('resetApp')?.addEventListener('click', () => {
-  localStorage.removeItem(STORAGE_KEY);
-  localStorage.removeItem(OLD_STORAGE_KEY);
+  LEGACY_STORAGE_KEYS.forEach(key => localStorage.removeItem(key));
   localStorage.removeItem(VISIT_KEY);
+  localStorage.removeItem(MIGRATION_KEY);
   location.reload();
 });
 
