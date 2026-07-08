@@ -1,56 +1,29 @@
-const $ = (s)=>document.querySelector(s);
-const app = $('#app');
-const storeKey='projectFiestaV03';
-const oldKey='projectFiestaV02';
-const crew=[
- {name:'Cesar',role:'El Rey de la Fiesta',team:'Honorary',emoji:'👑',seat:[43,18]},
- {name:'Daniel',role:'El Padrino',team:'Fortaleza',emoji:'🤵',seat:[16,31]},
- {name:'Kevin',role:'Mystery Title',team:'Fortaleza',emoji:'🥃',seat:[70,31]},
- {name:'Gerardo',role:'Mystery Title',team:'Fortaleza',emoji:'🌵',seat:[6,54]},
- {name:'David',role:'Mystery Title',team:'G4',emoji:'🔥',seat:[80,54]},
- {name:'Chucky',role:'Mystery Title',team:'G4',emoji:'😂',seat:[16,75]},
- {name:'Jose',role:'Mystery Title',team:'G4',emoji:'🍻',seat:[70,75]},
- {name:'Arturo',role:'Mystery Title',team:'Centenario',emoji:'🏜️',seat:[42,82]},
- {name:'Frank',role:'Mystery Title',team:'Centenario',emoji:'🌙',seat:[42,52]}
-];
-const titles={
- planner:['🦂','El Escorpión','Loyal to the crew. Calm until it is time to strike.'],
- party:['🔥','El Fuego','Brings the energy before anyone even asks.'],
- foodie:['🌮','El Bandido','Always chasing the next bite and the next story.'],
- explorer:['🏜️','El Explorador','Built for the desert, the road, and the unknown.'],
- chill:['🍻','El Compadre','The friend everyone wants nearby.'],
- night:['🌙','El Nocturno','The legend who comes alive after sunset.']
+const CREW=[['Cesar','👑 El Rey de la Fiesta','king'],['Daniel','🤵 El Padrino',''],['Kevin','Traveler',''],['Gerardo','Traveler',''],['David','Traveler',''],['Chucky','Traveler',''],['Jose','Traveler',''],['Arturo','Traveler',''],['Frank','Traveler','']];
+const TITLE_COPY={
+ 'El Fuego':'Always brings the energy when the weekend needs a spark.',
+ 'El Nocturno':'The night does not truly begin until he arrives.',
+ 'El Compadre':'The one everyone can count on from first toast to final flight.',
+ 'El Explorador':'Always ready for the next trail, stop, or story.',
+ 'El Catador':'A man of taste, timing, and one more pour.',
+ 'El Bandido':'Here for legendary stories and questionable decisions.'
 };
-const days={
- Thursday:[['3:13 PM','Land at PHX','Airport arrival and meet up.'],['4:15 PM','Casa Check-in','Seven Palms North Scottsdale.'],['5:00 PM','Grocery + Liquor Run','Stock the house.'],['8:00 PM','Pool + First Toast','Start the weekend right.'],['10:00 PM','Old Town','Uber only.']],
- Friday:[['Morning','Team Fortaleza','Breakfast and lunch duty.'],['10:00 AM','SXS Desert Adventure','Closed-toe shoes, sunscreen, water.'],['4:00 PM','Pool Recovery','Relax at the casa.'],['7:30 PM','Steak Dinner','Dress sharp.'],['10:00 PM','Nightlife','Scottsdale after dark.']],
- Saturday:[['Morning','Team G4','Breakfast and lunch duty.'],['Noon','Pool Day','Music, photos, games.'],['7:00 PM','Bachelor Dinner','Toast Cesar.'],['10:00 PM','VIP Night','The biggest night.']],
- Sunday:[['Morning','Team Centenario','Breakfast and lunch duty.'],['Afternoon','Recovery + Pool','Easy day.'],['Evening','Awards + Final Toast','Memory mode begins.']],
- Monday:[['8:00 AM','Pack + Clean','Everyone helps.'],['10:45 AM','Leave Airbnb','Head to PHX.'],['1:28 PM','Flight Home','Wheels up.']]
-};
-const stamps=['Passport Created','Casa Check-in','First Toast','Desert Survivor','Cocina Crew','Pool Day','Bachelor Dinner','Final Toast'];
-let state=JSON.parse(localStorage.getItem(storeKey)||localStorage.getItem(oldKey)||'{}');
-let tab='home'; let selectedFrame='Agave', photoData=''; let dayFilter='Thursday';
-function save(){localStorage.setItem(storeKey,JSON.stringify(state));}
-function nav(){return `<div class="nav">${[['home','🏠','Home'],['passport','🎟','Passport'],['crew','👥','Crew'],['weekend','📅','Weekend'],['more','🏆','More']].map(n=>`<button class="${tab===n[0]?'active':''}" onclick="go('${n[0]}')"><div>${n[1]}</div>${n[2]}</button>`).join('')}</div>`}
-function go(t){tab=t;render(); window.scrollTo({top:0,behavior:'smooth'});}
-function countdown(){const target=new Date('2026-07-09T15:13:00-07:00'); const now=new Date(); let diff=target-now; if(diff<0)return 'Fiesta Mode'; const d=Math.floor(diff/86400000),h=Math.floor(diff%86400000/3600000); return `${d} days · ${h} hours`;}
-function hero(){const p=state.profile;return `<div class="hero"><div class="version">v0.3</div><div class="kicker">Scottsdale · July 9–13, 2026</div><div class="title">One Last Fiesta<br/>Before the Siesta</div><div class="subtitle">${p?`Welcome back, ${p.name}. Your passport is active.`:'Every legend has a role. Every fiesta has a story.'}</div><div class="pillrow"><span class="pill">👑 Cesar</span><span class="pill">9 Amigos</span><span class="pill">3 Cocina Teams</span><span class="pill">${countdown()}</span></div><button class="cta" onclick="go('${p?'passport':'passport'}')">${p?'Open My Passport':'Create My Passport'}</button></div>`}
-function home(){return `${hero()}<div class="section grid"><div class="stat"><b>9</b><span>Amigos</span></div><div class="stat"><b>4</b><span>Nights</span></div><div class="stat"><b>3</b><span>Teams</span></div><div class="stat"><b>1</b><span>Legendary Weekend</span></div></div>${state.profile?hacienda():`<div class="section card"><h2>Begin Your Journey</h2><p class="quote">Create your Fiesta Passport to reveal your title and take your seat in the hacienda.</p><button class="cta secondary" onclick="go('passport')">Start Passport</button></div>`}${state.profile?dashboardMini():''}`}
-function dashboardMini(){let p=state.profile;return `<div class="card"><div style="display:flex;gap:14px;align-items:center"><div class="avatar">${p.photo?`<img src="${p.photo}">`:p.titleEmoji}</div><div><div class="role">${p.title}</div><h2 style="margin:2px 0">${p.name}</h2><div class="small">${p.team||'Team pending'} · ${p.room||'Room pending'}</div></div></div><button class="cta" onclick="go('passport')">View Passport + Boarding Pass</button></div>`}
-function hacienda(){const p=state.profile;let completed=crew.map(c=>c.name==='Cesar'||c.name==='Daniel'||c.name===p.name);let all=false;return `<div class="section"><h2>La Hacienda</h2><div class="courtyard"><div class="lights">${[8,22,36,50,64,78,92].map(x=>`<span style="left:${x}%"></span>`).join('')}</div><div class="kicker">Crew Courtyard</div><div class="fire">🔥</div>${crew.map((c,i)=>{let active=completed[i]; let mine=p.name===c.name;return `<div class="seat ${active?'':'empty'}" style="left:${c.seat[0]}%;top:${c.seat[1]}%"><div class="avatar">${mine&&p.photo?`<img src="${p.photo}">`:active?c.emoji:'?'}</div><b>${active?c.name:'Awaiting'}</b><small>${mine?p.title:(active?c.role:'Passport')}</small></div>`}).join('')}<div class="completeBanner"><b>${all?'La Fiesta Está Completa':'The crew is assembling'}</b><div class="small">${completed.filter(Boolean).length}/9 seats filled on this device preview.</div></div></div></div>`}
-function passport(){if(!state.profile)return profileForm();let p=state.profile;return `<div class="topbar"><button class="mini" onclick="go('home')">← Home</button><button class="mini" onclick="editProfile()">Edit Passport</button></div>${boardingPass(p)}<div class="card"><div style="display:flex;gap:16px;align-items:center"><div class="avatar">${p.photo?`<img src="${p.photo}">`:p.titleEmoji}</div><div><div class="role">Fiesta Passport</div><h2 style="margin:0">${p.name}</h2><div class="small">${p.title}</div></div></div><hr/><p class="quote">“${p.motto}”</p><div class="grid"><div><b>Drink</b><p class="small">${p.drink}</p></div><div><b>Taco</b><p class="small">${p.taco}</p></div><div><b>Walk-Up Song</b><p class="small">${p.song}</p></div><div><b>Frame</b><p class="small">${p.frame}</p></div></div><b>Fun Fact</b><p class="small">${p.fact}</p></div><div class="card"><h2>Passport Stamps</h2><p class="small">Tap a stamp to mark it complete on this phone.</p>${stamps.map(s=>`<button class="stamp ${state.stamps?.includes(s)?'on':''}" onclick="toggleStamp('${s}')">${state.stamps?.includes(s)?'✅':'⬜'} ${s}</button>`).join('')}</div>`}
-function boardingPass(p){return `<div class="boarding card"><div class="kicker" style="color:#b8643e">Cleared for Departure</div><h2 style="margin-bottom:0">Fiesta Boarding Pass</h2><div class="row"><div><div class="small">Passenger</div><b>${p.name}</b></div><div><div class="small">Title</div><b>${p.title}</b></div></div><div class="row"><div><div class="small">From</div><div class="code">CHI</div></div><div><div class="small">To</div><div class="code">PHX</div></div></div><div class="row"><div><div class="small">Team</div><b>${p.team||'Pending'}</b></div><div><div class="small">Status</div><b>Ready</b></div></div><div class="barcode"></div></div>`}
-function toggleStamp(s){state.stamps=state.stamps||[];state.stamps=state.stamps.includes(s)?state.stamps.filter(x=>x!==s):[...state.stamps,s];save();render();}
-function profileForm(){const frames=['Agave','Desert Sunset','Tequila Barrel','Margarita','Talavera','Gold Groom'];return `<div class="card form"><h2>Create Your Fiesta Passport</h2><p class="small">Your answers reveal your Fiesta title. This saves on your phone automatically.</p><label>Photo</label><input id="photo" class="photoInput" type="file" accept="image/*"><label for="photo" class="photoBtn">Upload Photo</label><label>First Name</label><select id="name">${crew.map(c=>`<option>${c.name}</option>`).join('')}</select><label>Favorite Drink</label><input id="drink" placeholder="Tequila, whiskey, beer..."><label>Favorite Taco</label><input id="taco" placeholder="Carne asada, al pastor..."><label>Walk-Up Song</label><input id="song" placeholder="Song title"><label>Fun Fact</label><textarea id="fact" placeholder="Something funny about you"></textarea><label>Vacation Personality</label><select id="personality"><option value="planner">The Planner</option><option value="party">The Party Starter</option><option value="foodie">The Foodie</option><option value="explorer">The Explorer</option><option value="chill">The Chill One</option><option value="night">The Night Owl</option></select><label>Avatar Frame</label><div class="frames">${frames.map((f,i)=>`<button class="frame ${i===0?'active':''}" onclick="pickFrame(this,'${f}')">${['🌵','🌅','🥃','🍹','🎨','👑'][i]}<br>${f}</button>`).join('')}</div><button class="cta" onclick="createPassport()">Reveal My Title</button></div>`}
-function pickFrame(el,f){selectedFrame=f;document.querySelectorAll('.frame').forEach(x=>x.classList.remove('active'));el.classList.add('active');}
-document.addEventListener('change',e=>{if(e.target.id==='photo' && e.target.files[0]){const r=new FileReader();r.onload=()=>photoData=r.result;r.readAsDataURL(e.target.files[0]);}});
-function createPassport(){const name=$('#name').value;const base=crew.find(c=>c.name===name);let t;if(name==='Cesar')t=['👑','El Rey de la Fiesta','This weekend is yours. Your crew has gathered to celebrate you.'];else if(name==='Daniel')t=['🤵','El Padrino','The best man. The host. The one keeping the story moving.'];else t=titles[$('#personality').value];state.profile={name,drink:$('#drink').value||'Mystery Drink',taco:$('#taco').value||'Mystery Taco',song:$('#song').value||'Mystery Song',fact:$('#fact').value||'Still classified.',frame:selectedFrame,photo:photoData,titleEmoji:t[0],title:t[1],motto:t[2],team:base?.team,room:'Room pending'};state.stamps=state.stamps||['Passport Created'];save();showReveal(state.profile);}
-function showReveal(p){app.innerHTML=`<div class="reveal"><div class="revealBox"><div class="kicker">Consulting the Sonoran Desert...</div><div class="bigEmoji">${p.titleEmoji}</div><div class="fiestaName">${p.title}</div><p>${p.motto}</p><button class="cta" onclick="tab='passport';render()">Accept My Title</button></div></div>`}
-function editProfile(){if(confirm('Edit your passport? This will clear your current saved passport on this phone.')){state.profile=null;save();render();}}
-function crewPage(){let p=state.profile;return `<div class="section"><h2>The Crew</h2><p class="small">Mystery titles unlock as each amigo creates their passport.</p><div class="crew">${crew.map(c=>{let mine=p&&p.name===c.name;let active=c.name==='Cesar'||c.name==='Daniel'||mine;return `<div class="crewCard ${mine?'mine':''}"><div class="avatar">${mine&&p.photo?`<img src="${p.photo}">`:active?c.emoji:'?'}</div><b>${active?c.name:'Awaiting Passport'}</b><div class="role">${mine?p.title:c.role}</div><div class="team">${c.team}</div></div>`}).join('')}</div></div>`}
-function weekend(){return `<div class="section"><h2>Weekend</h2><div class="tabs">${Object.keys(days).map(d=>`<button class="${dayFilter===d?'active':''}" onclick="dayFilter='${d}';render()">${d}</button>`).join('')}</div><div class="card"><h2>${dayFilter}</h2><div class="timeline">${days[dayFilter].map(e=>`<div class="event"><b>${e[0]} · ${e[1]}</b><div class="small">${e[2]}</div></div>`).join('')}</div></div></div>`}
-function more(){return `<div class="section"><h2>Cocina Challenge</h2>${[['Fortaleza','Friday','Daniel, Kevin, Gerardo',''],['G4','Saturday','David, Chucky, Jose','g4'],['Centenario','Sunday','Arturo, Frank, Cesar','centenario']].map(t=>`<div class="card teamCard ${t[3]}"><h2>🥃 Team ${t[0]}</h2><b>${t[1]} Breakfast + Lunch</b><p class="small">${t[2]}</p></div>`).join('')}</div><div class="card"><h2>Casa de la Fiesta</h2><p><b>Seven Palms North Scottsdale</b></p><p class="small">5617 E Yolantha Street · Pool · Putting green · Arcade · Large kitchen.</p></div><div class="card"><h2>Awards</h2>${['Cocina Champions','Fiesta MVP','Funniest Moment','Desert Legend','Photographer of the Weekend'].map(a=>`<span class="stamp">🏆 ${a}</span>`).join('')}</div><div class="card"><h2>Install on iPhone</h2><p class="small">Open the site in Safari, tap Share, then Add to Home Screen.</p></div><div class="card"><h2>Host Tools</h2><button class="cta danger" onclick="if(confirm('Clear saved profile on this phone?')){localStorage.removeItem(storeKey);localStorage.removeItem(oldKey);state={};tab='home';render()} ">Clear My Saved Data</button></div>`}
-function render(){app.className='app';app.innerHTML=(tab==='home'?home():tab==='passport'?passport():tab==='crew'?crewPage():tab==='weekend'?weekend():more())+nav();}
-if('serviceWorker' in navigator) navigator.serviceWorker.register('service-worker.js');
-render();
+let passport=JSON.parse(localStorage.getItem('fiestaPassport')||'null')||{};
+const $=s=>document.querySelector(s);
+const $$=s=>document.querySelectorAll(s);
+function show(scene){$$('.scene').forEach(x=>x.classList.remove('active'));$('#scene-'+scene).classList.add('active');window.scrollTo(0,0)}
+function save(){localStorage.setItem('fiestaPassport',JSON.stringify(passport))}
+function hydrate(){if(passport.firstName&&passport.title){renderPlaza();show('plaza')}}
+function renderPlaza(){
+ const name=passport.firstName||'Traveler';
+ $('#welcome-line').textContent=`Bienvenido, ${name}`;
+ $('#plaza-name').textContent=`${passport.avatar||'🌵'} ${name}`;
+ $('#plaza-title').textContent=passport.title?`${passport.title} — ${TITLE_COPY[passport.title]||'Your story begins now.'}`:'Your story begins now.';
+ $('#p-drink').textContent=passport.drink||'—';$('#p-taco').textContent=passport.taco||'—';$('#p-song').textContent=passport.song||'—';$('#p-fact').textContent=passport.funFact||'—';
+ $('#crew-grid').innerHTML=CREW.map(([n,r,c])=>`<div class="crew-member ${c}"><div>${n}<br><small>${n===name?(passport.title||r):r}</small></div></div>`).join('');
+}
+$$('[data-go]').forEach(btn=>btn.addEventListener('click',()=>show(btn.dataset.go)));
+$('#passport-form').addEventListener('submit',e=>{e.preventDefault();passport={...passport,firstName:$('#firstName').value.trim(),drink:$('#drink').value.trim(),taco:$('#taco').value.trim(),song:$('#song').value.trim(),funFact:$('#funFact').value.trim(),avatar:$('#avatar').value};save();show('quiz')});
+$('#quiz-options').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;passport.title=b.dataset.title;save();$('#reveal-name').textContent=passport.firstName||'Traveler';$('#reveal-title').textContent=passport.title;$('#reveal-copy').textContent=TITLE_COPY[passport.title]||'Your story begins now.';show('reveal')});
+$('#reset-btn').addEventListener('click',()=>{if(confirm('Clear your local Fiesta Passport?')){localStorage.removeItem('fiestaPassport');passport={};location.reload()}});
+if('serviceWorker'in navigator){navigator.serviceWorker.register('service-worker.js').catch(()=>{})}
+hydrate();

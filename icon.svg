@@ -1,9 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-<defs><linearGradient id="g" x1="0" x2="1" y1="0" y2="1"><stop stop-color="#2f3f2f"/><stop offset="1" stop-color="#b8643e"/></linearGradient></defs>
-<rect width="512" height="512" rx="112" fill="url(#g)"/>
-<circle cx="256" cy="178" r="92" fill="#d7a84f" opacity=".9"/>
-<path d="M82 372c72-86 124-104 174-104s102 18 174 104H82z" fill="#f7efe3" opacity=".92"/>
-<path d="M256 112c-32 72-36 138-16 212h32c20-74 16-140-16-212z" fill="#2f3f2f"/>
-<path d="M218 238c-58-32-80-78-88-128 54 24 92 62 106 121l-18 7zM294 238c58-32 80-78 88-128-54 24-92 62-106 121l18 7z" fill="#526b49"/>
-<text x="256" y="438" font-size="42" text-anchor="middle" fill="#2f3f2f" font-family="Georgia" font-weight="bold">FIESTA</text>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" rx="112" fill="#1f2a24"/><circle cx="256" cy="176" r="72" fill="#c9a44b"/><path d="M82 365 191 221l70 91 48-58 121 111z" fill="#bf663f"/><path d="M252 344v-95m0 0c-35 0-54-21-54-55m54 55c35 0 54-21 54-55" stroke="#f8f1e7" stroke-width="24" stroke-linecap="round" fill="none"/></svg>
