@@ -13,10 +13,10 @@
     <section id="scene-splash" class="scene active">
       <div class="hero-card">
         <div class="emblem">🌵</div>
-        <p class="eyebrow">RC1.04 — The Reveal</p>
+        <p class="eyebrow">RC1.05 — The Plaza</p>
         <h1>One Last Fiesta<br />Before the Siesta</h1>
         <p class="subtitle">Scottsdale • July 9–13, 2026</p>
-        <p class="release-pill">RC1.04 — The Reveal</p>
+        <p class="release-pill">RC1.05 — The Plaza</p>
         <p class="motto">Every legend has a role.<br />Every fiesta has a story.</p>
         <button class="primary-btn" data-go="invitation">Begin the Journey</button>
         <button class="secondary-btn" id="continue-btn" hidden>Continue Your Journey</button>
@@ -97,7 +97,7 @@
     <section id="scene-quiz" class="scene">
       <div class="topbar"><button class="ghost-btn" data-go="journey">←</button><span>Fiesta Spirit</span></div>
       <div class="card quiz-shell">
-        <p class="eyebrow">RC1.04 — The Reveal</p>
+        <p class="eyebrow">RC1.05 — The Plaza</p>
         <h2>The Traveler's Quiz</h2>
         <p>Five choices. One Fiesta Title. Your passport is waiting for its seal.</p>
         <div id="quiz-progress-label" class="quiz-label">Question 1 of 5</div>
@@ -123,15 +123,37 @@
       </div>
     </section>
 
-    <section id="scene-plaza" class="scene">
+    <section id="scene-plaza" class="scene plaza-scene">
       <div class="topbar"><span>🌵 The Plaza</span><button class="ghost-btn" id="reset-btn">Reset</button></div>
-      <div class="welcome-card">
-        <p id="welcome-line">Bienvenido</p>
-        <h2 id="plaza-name">Traveler</h2>
-        <p id="plaza-title">Your story begins now.</p>
+
+      <div class="plaza-hero">
+        <div class="skyline">
+          <span class="sun">☀️</span>
+          <span class="mountains">▵▵▵</span>
+        </div>
+        <div class="welcome-card plaza-welcome">
+          <p id="welcome-line">Bienvenido</p>
+          <h2 id="plaza-name">Traveler</h2>
+          <p id="plaza-title">Your story begins now.</p>
+          <div class="countdown" id="countdown">Preparing for departure...</div>
+        </div>
+        <div class="courtyard" aria-label="Hacienda courtyard crew seats">
+          <div class="string-lights"><span></span><span></span><span></span><span></span><span></span></div>
+          <div class="firepit">🔥</div>
+          <div class="seat-grid" id="seat-grid"></div>
+          <p class="plaza-caption" id="plaza-caption">The campfire is lit. The crew is gathering.</p>
+        </div>
       </div>
+
+      <div class="quick-actions">
+        <button class="action-card" data-jump="passport-panel">🎟<span>Passport</span></button>
+        <button class="action-card" data-jump="boarding-panel">✈️<span>Boarding Pass</span></button>
+        <button class="action-card" data-jump="stamps-panel">🛂<span>Stamps</span></button>
+        <button class="action-card" data-jump="weekend-panel">📅<span>Weekend</span></button>
+      </div>
+
       <div class="grid two">
-        <div class="card passport-card">
+        <div class="card passport-card" id="passport-panel">
           <div class="passport-cover">
             <div class="passport-photo-small" id="passport-photo-small">🎟️</div>
             <div><h3>🎟 Fiesta Passport</h3><p id="passport-seal">🌵 Agave Seal</p></div>
@@ -141,20 +163,28 @@
           <p><strong>Song:</strong> <span id="p-song"></span></p>
           <p><strong>Fun Fact:</strong> <span id="p-fact"></span></p>
         </div>
-        <div class="card boarding-card">
+        <div class="card boarding-card" id="boarding-panel">
           <h3>✈️ Boarding Pass</h3>
           <p><strong>Passenger:</strong> <span id="bp-name">Traveler</span></p>
           <p><strong>Destination:</strong> Scottsdale</p>
+          <p><strong>Flight:</strong> One Last Fiesta</p>
           <p><strong>Status:</strong> Cleared for Departure</p>
-          <p><strong>Event:</strong> One Last Fiesta</p>
+          <div class="barcode">|||| ||| |||| | ||||| |||</div>
         </div>
       </div>
+
+      <div class="card" id="stamps-panel">
+        <div class="section-head"><h3>🛂 Passport Stamps</h3><small>Tap to stamp your journey</small></div>
+        <div class="stamp-grid" id="stamp-grid"></div>
+      </div>
+
       <div class="card">
-        <h3>🔥 The Crew</h3>
+        <div class="section-head"><h3>🔥 The Crew</h3><small>9 amigos • 1 campfire</small></div>
         <div class="crew-grid" id="crew-grid"></div>
       </div>
-      <div class="card">
-        <h3>📅 Weekend Chapters</h3>
+
+      <div class="card" id="weekend-panel">
+        <div class="section-head"><h3>📅 Weekend Chapters</h3><small>July 9–13, 2026</small></div>
         <ul class="timeline">
           <li><strong>Thursday:</strong> Arrival, Casa Check-In, First Toast</li>
           <li><strong>Friday:</strong> Desert Adventure + Team Fortaleza</li>

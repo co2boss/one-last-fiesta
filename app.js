@@ -21,7 +21,7 @@ const QUIZ=[
  {q:'The crew needs you because...',a:[['You bring the spark','El Fuego'],['You bring the taste','El Catador'],['You keep the group together','El Compadre'],['You see what others miss','El Águila']]}
 ];
 
-const VERSION='RC1.04 — The Reveal';
+const VERSION='RC1.05 — The Plaza';
 const STORAGE_KEY='fiestaPassport';
 let passport=JSON.parse(localStorage.getItem(STORAGE_KEY)||'null')||{};
 let quizIndex=0;
@@ -37,7 +37,54 @@ function setupInvitation(){const continueBtn=$('#continue-btn');if(!continueBtn)
 function hydrateForm(){const fields=['firstName','drink','taco','song','funFact','avatar'];fields.forEach(id=>{const el=$('#'+id); if(el&&passport[id]!==undefined)el.value=passport[id]}); if(passport.photo) setPhoto(passport.photo); if(passport.avatar) selectAvatar(passport.avatar,false)}
 function setPhoto(src){const prev=$('#photo-preview');const small=$('#passport-photo-small');const html=`<img src="${src}" alt="Passport photo">`; if(prev)prev.innerHTML=html;if(small)small.innerHTML=html;}
 function selectAvatar(value,saveNow=true){const hidden=$('#avatar'); if(hidden) hidden.value=value; $$('#avatar-grid button').forEach(b=>b.classList.toggle('selected',b.dataset.avatar===value)); if(saveNow){passport.avatar=value;save();}}
-function renderPlaza(){const name=passport.firstName||'Traveler';$('#welcome-line').textContent=`Bienvenido, ${name}`;$('#plaza-name').textContent=`${passport.avatar||'🌵 Agave'} ${name}`;$('#plaza-title').textContent=passport.title?`${passport.title} — ${TITLE_COPY[passport.title]||'Your story begins now.'}`:'Your story begins now.';$('#p-drink').textContent=passport.drink||'—';$('#p-taco').textContent=passport.taco||'—';$('#p-song').textContent=passport.song||'—';$('#p-fact').textContent=passport.funFact||'—';$('#passport-seal').textContent=`${passport.avatar||'🌵 Agave'} Seal`;$('#bp-name').textContent=name;if(passport.photo)setPhoto(passport.photo);$('#crew-grid').innerHTML=CREW.map(([n,r,c])=>`<div class="crew-member ${c}"><div>${n}<br><small>${n===name?(passport.title||r):r}</small></div></div>`).join('')}
+function renderPlaza(){
+ const name=passport.firstName||'Traveler';
+ $('#welcome-line').textContent=`Bienvenido, ${name}`;
+ $('#plaza-name').textContent=`${passport.avatar||'🌵 Agave'} ${name}`;
+ $('#plaza-title').textContent=passport.title?`${passport.title} — ${TITLE_COPY[passport.title]||'Your story begins now.'}`:'Your story begins now.';
+ $('#p-drink').textContent=passport.drink||'—';$('#p-taco').textContent=passport.taco||'—';$('#p-song').textContent=passport.song||'—';$('#p-fact').textContent=passport.funFact||'—';
+ $('#passport-seal').textContent=`${passport.avatar||'🌵 Agave'} Seal`;$('#bp-name').textContent=name;
+ if(passport.photo)setPhoto(passport.photo);
+ renderSeats(name);
+ renderCrew(name);
+ renderStamps();
+ updateCountdown();
+}
+function renderSeats(name){
+ const grid=$('#seat-grid'); if(!grid)return;
+ grid.innerHTML=CREW.map(([n,r,c])=>{
+   const active=n.toLowerCase()===String(name).toLowerCase();
+   const role=active?(passport.title||r):r;
+   const icon=active?(passport.photo?`<img src="${passport.photo}" alt="${n}">`:titleIcon(passport.title||role)):(n==='Cesar'?'👑':'👤');
+   return `<div class="seat-card ${c} ${active?'active':''} ${!active&&r==='Traveler'?'empty':''}"><div class="seat-icon">${icon}</div><strong>${n}</strong><small>${role}</small></div>`
+ }).join('');
+ const complete=CREW.length;
+ const caption=$('#plaza-caption'); if(caption) caption.textContent=`${name} has arrived. ${complete} seats are reserved around the campfire.`;
+}
+function renderCrew(name){
+ const crew=$('#crew-grid'); if(!crew)return;
+ crew.innerHTML=CREW.map(([n,r,c])=>`<div class="crew-member ${c}"><div>${n}<br><small>${n===name?(passport.title||r):r}</small></div></div>`).join('')
+}
+const STAMPS=['Casa Check-In','First Toast','Desert Adventure','Cocina Crew','Pool Day','Bachelor Dinner','Awards Night','Final Toast'];
+function renderStamps(){
+ const el=$('#stamp-grid'); if(!el)return;
+ const earned=new Set(passport.stamps||[]);
+ el.innerHTML=STAMPS.map(s=>`<button class="stamp ${earned.has(s)?'done':''}" data-stamp="${s}"><span>${earned.has(s)?'✅':'🛂'}</span>${s}</button>`).join('');
+}
+function toggleStamp(stamp){
+ const stamps=new Set(passport.stamps||[]);
+ stamps.has(stamp)?stamps.delete(stamp):stamps.add(stamp);
+ passport.stamps=[...stamps]; save(); renderStamps(); toast(stamps.has(stamp)?`${stamp} stamped.`:`${stamp} removed.`);
+}
+function updateCountdown(){
+ const el=$('#countdown'); if(!el)return;
+ const target=new Date('2026-07-09T15:13:00-07:00').getTime();
+ const diff=target-Date.now();
+ if(diff<=0){el.textContent='The fiesta has begun.';return;}
+ const d=Math.floor(diff/86400000); const h=Math.floor((diff%86400000)/3600000); const m=Math.floor((diff%3600000)/60000);
+ el.textContent=`Departure countdown: ${d}d ${h}h ${m}m`;
+}
+
 function titleIcon(title){
  const icons={
   'El Rey de la Fiesta':'👑','El Padrino':'🤵','El Fuego':'🔥','El Nocturno':'🌙','El Compadre':'🍻','El Explorador':'🏜️','El Catador':'🥃','El Bandido':'🌮','El Escorpión':'🦂','El Águila':'🦅'
@@ -49,7 +96,7 @@ function revealTitle(title){
  if(n==='cesar') title='El Rey de la Fiesta';
  if(n==='daniel') title='El Padrino';
  passport.title=title;
- passport.stamps=[...(passport.stamps||[]),'Fiesta Title Revealed'];
+ passport.stamps=[...new Set([...(passport.stamps||[]),'Fiesta Title Revealed'])];
  save();
  $('#reveal-name').textContent=passport.firstName||'Traveler';
  $('#reveal-title').textContent=passport.title;
@@ -73,5 +120,10 @@ const avatarGrid=$('#avatar-grid');if(avatarGrid){avatarGrid.addEventListener('c
 const quizCard=$('#quiz-card');if(quizCard){quizCard.addEventListener('click',e=>{const b=e.target.closest('.quiz-answer');if(!b)return;answerQuiz(b.dataset.title)})}
 const resetBtn=$('#reset-btn');if(resetBtn){resetBtn.addEventListener('click',()=>{if(confirm('Clear your local Fiesta Passport?')){localStorage.removeItem(STORAGE_KEY);passport={};location.reload()}})}
 const enterPlazaBtn=document.querySelector('#scene-reveal [data-go="plaza"]');if(enterPlazaBtn){enterPlazaBtn.addEventListener('click',()=>renderPlaza())}
+
+const stampGrid=$('#stamp-grid');if(stampGrid){stampGrid.addEventListener('click',e=>{const b=e.target.closest('.stamp');if(!b)return;toggleStamp(b.dataset.stamp)})}
+$$('[data-jump]').forEach(btn=>btn.addEventListener('click',()=>{const target=$('#'+btn.dataset.jump); if(target) target.scrollIntoView({behavior:'smooth',block:'start'})}));
+setInterval(updateCountdown,60000);
+
 if('serviceWorker'in navigator){navigator.serviceWorker.register('service-worker.js').catch(()=>{})}
 setupInvitation();hydrateForm();if(isComplete()){renderPlaza();show('plaza')}
