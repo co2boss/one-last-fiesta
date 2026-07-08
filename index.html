@@ -13,11 +13,30 @@
     <section id="scene-splash" class="scene active">
       <div class="hero-card">
         <div class="emblem">🌵</div>
-        <p class="eyebrow">RC1 — Sunrise</p>
+        <p class="eyebrow">RC1.04 — The Reveal</p>
         <h1>One Last Fiesta<br />Before the Siesta</h1>
         <p class="subtitle">Scottsdale • July 9–13, 2026</p>
+        <p class="release-pill">RC1.04 — The Reveal</p>
         <p class="motto">Every legend has a role.<br />Every fiesta has a story.</p>
-        <button class="primary-btn" data-go="passport">Begin the Journey</button>
+        <button class="primary-btn" data-go="invitation">Begin the Journey</button>
+        <button class="secondary-btn" id="continue-btn" hidden>Continue Your Journey</button>
+      </div>
+    </section>
+
+    <section id="scene-invitation" class="scene">
+      <div class="topbar"><button class="ghost-btn" data-go="splash">←</button><span>The Invitation</span></div>
+      <div class="invite-card">
+        <div class="seal">✉️</div>
+        <p class="eyebrow">Chapter I</p>
+        <h2>You have been invited.</h2>
+        <p class="subtitle">Before the desert welcomes the crew, every traveler must receive their Fiesta Passport.</p>
+        <div class="invitation-lines">
+          <p><strong>Destination:</strong> Scottsdale, Arizona</p>
+          <p><strong>Occasion:</strong> One Last Fiesta Before the Siesta</p>
+          <p><strong>Hosted for:</strong> Cesar — El Rey de la Fiesta</p>
+          <p><strong>Your role:</strong> To be revealed</p>
+        </div>
+        <button class="primary-btn" data-go="passport">Receive My Passport</button>
       </div>
     </section>
 
@@ -27,50 +46,80 @@
         <h2>Receive Your Passport</h2>
         <p>Tell the Plaza who you are before the story begins.</p>
         <form id="passport-form">
-          <label>First Name <input required id="firstName" placeholder="Daniel" /></label>
+          <div class="photo-picker">
+            <div class="photo-preview" id="photo-preview">📸</div>
+            <label class="upload-label">Passport Photo
+              <input type="file" id="photoInput" accept="image/*" />
+            </label>
+          </div>
+          <label>First Name <input required id="firstName" placeholder="Daniel" autocomplete="given-name" /></label>
           <label>Favorite Drink <input id="drink" placeholder="Ranch Water" /></label>
           <label>Favorite Taco <input id="taco" placeholder="Carne asada" /></label>
           <label>Walk-Up Song <input id="song" placeholder="Dreams and Nightmares" /></label>
           <label>Fun Fact <textarea id="funFact" placeholder="Something the crew should know..."></textarea></label>
-          <label>Avatar Frame
-            <select id="avatar">
-              <option value="🌵 Agave">🌵 Agave</option>
-              <option value="🌅 Sunset">🌅 Sunset</option>
-              <option value="🏜️ Desert">🏜️ Desert</option>
-              <option value="🥃 Barrel">🥃 Barrel</option>
-              <option value="🍹 Margarita">🍹 Margarita</option>
-              <option value="🔥 Campfire">🔥 Campfire</option>
-              <option value="👑 Gold">👑 Gold — Cesar Only</option>
-            </select>
-          </label>
-          <button class="primary-btn" type="submit">Continue to the Quiz</button>
+          <input type="hidden" id="avatar" value="🌵 Agave" />
+          <div class="field-title">Choose Your Passport Seal</div>
+          <div class="avatar-grid" id="avatar-grid">
+            <button type="button" data-avatar="🌵 Agave" class="selected">🌵<span>Agave</span></button>
+            <button type="button" data-avatar="🌅 Sunset">🌅<span>Sunset</span></button>
+            <button type="button" data-avatar="🏜️ Desert">🏜️<span>Desert</span></button>
+            <button type="button" data-avatar="🥃 Barrel">🥃<span>Barrel</span></button>
+            <button type="button" data-avatar="🍹 Margarita">🍹<span>Margarita</span></button>
+            <button type="button" data-avatar="🔥 Campfire">🔥<span>Campfire</span></button>
+            <button type="button" data-avatar="👑 Gold">👑<span>Gold</span></button>
+          </div>
+          <button class="primary-btn full" type="submit">Continue to The Journey</button>
         </form>
       </div>
     </section>
 
-    <section id="scene-quiz" class="scene">
-      <div class="topbar"><button class="ghost-btn" data-go="passport">←</button><span>Fiesta Spirit</span></div>
-      <div class="card">
-        <h2>Consulting the Desert</h2>
-        <p>Choose what feels most like you.</p>
-        <div class="quiz-grid" id="quiz-options">
-          <button data-title="El Fuego">I bring the energy 🔥</button>
-          <button data-title="El Nocturno">I own the late night 🌙</button>
-          <button data-title="El Compadre">I keep the crew together 🍻</button>
-          <button data-title="El Explorador">I chase the adventure 🏜️</button>
-          <button data-title="El Catador">I appreciate the good stuff 🥃</button>
-          <button data-title="El Bandido">I’m here for legendary stories 🌮</button>
+    <section id="scene-journey" class="scene">
+      <div class="topbar"><button class="ghost-btn" data-go="passport">←</button><span>The Journey</span></div>
+      <div class="journey-hero card">
+        <p class="eyebrow">Chapter III</p>
+        <h2>Your Journey Begins</h2>
+        <p>The desert does not hand out titles. It reveals them.</p>
+        <div class="journey-map" aria-label="Journey steps">
+          <div class="journey-step active"><span>🎟️</span><strong>Passport</strong><small>Stamped</small></div>
+          <div class="journey-line"></div>
+          <div class="journey-step"><span>🧭</span><strong>Quiz</strong><small>5 questions</small></div>
+          <div class="journey-line"></div>
+          <div class="journey-step"><span>👑</span><strong>Title</strong><small>Revealed</small></div>
         </div>
+        <div class="oracle-card">
+          <p>🌵 The Plaza is waiting.</p>
+          <p>Answer honestly. The app will match you with the Fiesta Title that fits your travel spirit.</p>
+        </div>
+        <button class="primary-btn full" data-go="quiz">Begin the Traveler's Quiz</button>
+      </div>
+    </section>
+
+    <section id="scene-quiz" class="scene">
+      <div class="topbar"><button class="ghost-btn" data-go="journey">←</button><span>Fiesta Spirit</span></div>
+      <div class="card quiz-shell">
+        <p class="eyebrow">RC1.04 — The Reveal</p>
+        <h2>The Traveler's Quiz</h2>
+        <p>Five choices. One Fiesta Title. Your passport is waiting for its seal.</p>
+        <div id="quiz-progress-label" class="quiz-label">Question 1 of 5</div>
+        <div id="quiz-progress" class="progress-line">Question 1 of 5</div>
+        <div id="quiz-card" class="quiz-card"></div>
       </div>
     </section>
 
     <section id="scene-reveal" class="scene">
-      <div class="reveal-card">
-        <p class="eyebrow">Your Fiesta Title Has Been Revealed</p>
-        <h2 id="reveal-name">Traveler</h2>
-        <div id="reveal-title" class="big-title">El Compadre</div>
-        <p id="reveal-copy">The one everyone can count on.</p>
-        <button class="primary-btn" data-go="plaza">Enter the Plaza</button>
+      <div class="reveal-stage">
+        <div class="reveal-sky"></div>
+        <div class="reveal-card ceremonial">
+          <p class="eyebrow">Chapter IV — The Reveal</p>
+          <div class="reveal-emblem" id="reveal-emblem">🌵</div>
+          <h2 id="reveal-name">Traveler</h2>
+          <p class="subtitle">Your Fiesta Spirit has been revealed.</p>
+          <div class="reveal-drum" id="reveal-drum">Consulting the desert...</div>
+          <div id="reveal-title" class="big-title">El Compadre</div>
+          <p id="reveal-copy">The one everyone can count on.</p>
+          <div class="stamp-line"><span>Passport Stamped</span><strong id="reveal-stamp">RC1.04</strong></div>
+          <button class="primary-btn" data-go="plaza">Accept My Title</button>
+        </div>
       </div>
     </section>
 
@@ -83,7 +132,10 @@
       </div>
       <div class="grid two">
         <div class="card passport-card">
-          <h3>🎟 Fiesta Passport</h3>
+          <div class="passport-cover">
+            <div class="passport-photo-small" id="passport-photo-small">🎟️</div>
+            <div><h3>🎟 Fiesta Passport</h3><p id="passport-seal">🌵 Agave Seal</p></div>
+          </div>
           <p><strong>Drink:</strong> <span id="p-drink"></span></p>
           <p><strong>Taco:</strong> <span id="p-taco"></span></p>
           <p><strong>Song:</strong> <span id="p-song"></span></p>
@@ -91,9 +143,10 @@
         </div>
         <div class="card boarding-card">
           <h3>✈️ Boarding Pass</h3>
-          <p>Destination: Scottsdale</p>
-          <p>Status: Cleared for Departure</p>
-          <p>Event: One Last Fiesta</p>
+          <p><strong>Passenger:</strong> <span id="bp-name">Traveler</span></p>
+          <p><strong>Destination:</strong> Scottsdale</p>
+          <p><strong>Status:</strong> Cleared for Departure</p>
+          <p><strong>Event:</strong> One Last Fiesta</p>
         </div>
       </div>
       <div class="card">
