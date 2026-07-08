@@ -1,31 +1,22 @@
-## v0.1
+# Roadmap
 
-Foundation
+## v0.1 Foundation
+Project structure and static PWA setup.
 
-## v0.2
+## v0.2 Passport Experience
+Create passport, saved profile, title reveal.
 
-Passport Experience
+## v0.3 Hacienda Dashboard
+Courtyard seats, boarding pass, improved crew experience.
 
-## v0.3
+## v0.4 Weekend Experience
+Expanded itinerary, casa guide, Scottsdale guide.
 
-Hacienda Dashboard
+## v0.5 Cocina Challenge
+Team scoring, groom rating, leaderboard.
 
-## v0.4
+## v0.6 Awards + Memory Mode
+Messages to Cesar, award ceremony, final weekend recap.
 
-Weekend Schedule
-
-## v0.5
-
-Cocina Challenge
-
-## v0.6
-
-Gallery
-
-## v0.7
-
-Awards
-
-## v1.0
-
-Release
+## v1.0 Release
+Final polish and deployment.
