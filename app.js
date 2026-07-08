@@ -1,129 +1,317 @@
-const CREW=[['Cesar','👑 El Rey de la Fiesta','king'],['Daniel','🤵 El Padrino',''],['Kevin','Traveler',''],['Gerardo','Traveler',''],['David','Traveler',''],['Chucky','Traveler',''],['Jose','Traveler',''],['Arturo','Traveler',''],['Frank','Traveler','']];
+const STORAGE_KEY = 'projectFiesta.passport.v2';
+const OLD_STORAGE_KEY = 'projectFiesta.passport.v1';
+const VISIT_KEY = 'projectFiesta.hasVisited';
+const scenes = ['invitation','passportScene','revealScene','plaza'];
+const wizardNames = ['Traveler','Signature','Frame','Spirit'];
+const $ = (id) => document.getElementById(id);
+let selectedFrame = 'agave';
+let wizardStep = 0;
 
-const TITLE_COPY={
- 'El Rey de la Fiesta':'The man of the weekend. The reason the crew has gathered.',
- 'El Padrino':'Keeper of the keys, protector of the plan, and guardian of the weekend.',
- 'El Fuego':'Always brings the energy when the weekend needs a spark.',
- 'El Nocturno':'The night does not truly begin until he arrives.',
- 'El Compadre':'The one everyone can count on from first toast to final flight.',
- 'El Explorador':'Always ready for the next trail, stop, or story.',
- 'El Catador':'A man of taste, timing, and one more pour.',
- 'El Bandido':'Here for legendary stories and questionable decisions.',
- 'El Escorpión':'Calm, loyal, and dangerous only when the moment demands it.',
- 'El Águila':'Sees the whole field, protects the crew, and moves with purpose.'
-};
+function showScene(id){
+  scenes.forEach(s => $(s)?.classList.add('hidden'));
+  $(id)?.classList.remove('hidden');
+  document.querySelectorAll('.bottom-nav button').forEach(btn => btn.classList.toggle('active', btn.dataset.target === id));
+  window.scrollTo({top:0,behavior:'smooth'});
+}
 
-const QUIZ=[
- {q:'When the trip starts, you are usually...',a:[['Finding the next adventure','El Explorador'],['Making sure everyone is good','El Compadre'],['Starting the energy early','El Fuego'],['Saving it for late night','El Nocturno']]},
- {q:'Pick your ideal Scottsdale moment.',a:[['Desert ride with dust everywhere','El Explorador'],['A perfect tequila pour','El Catador'],['A legendary late-night story','El Bandido'],['A calm sunset with the crew','El Escorpión']]},
- {q:'At the Airbnb, you are most likely to...',a:[['Start the playlist and set the vibe','El Fuego'],['Make sure everyone has food and water','El Compadre'],['Find the best spot to relax','El Escorpión'],['Convince someone to go out again','El Nocturno']]},
- {q:'Choose your travel weakness.',a:[['One more stop before heading back','El Explorador'],['One more tequila recommendation','El Catador'],['One more story that starts with “remember when”','El Bandido'],['One more check to make sure the plan is solid','El Águila']]},
- {q:'The crew needs you because...',a:[['You bring the spark','El Fuego'],['You bring the taste','El Catador'],['You keep the group together','El Compadre'],['You see what others miss','El Águila']]}
+function getPassport(){
+  try {
+    return JSON.parse(localStorage.getItem(STORAGE_KEY)) || JSON.parse(localStorage.getItem(OLD_STORAGE_KEY));
+  } catch {
+    return null;
+  }
+}
+function savePassport(data){ localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); }
+
+function frameIcon(frame){
+  return { agave:'🌵', sunset:'🌅', barrel:'🥃', campfire:'🔥', talavera:'🌮', gold:'👑' }[frame] || '🌵';
+}
+
+function titleFor(passport){
+  const name = (passport.name || '').toLowerCase();
+  const text = `${passport.drink} ${passport.taco} ${passport.song} ${passport.fact} ${passport.vibe}`.toLowerCase();
+  if(name === 'cesar') return ['👑 El Rey de la Fiesta','The man of the weekend. The reason the crew has gathered.'];
+  if(name === 'daniel') return ['🤵 El Padrino','Keeper of the keys and guardian of the weekend.'];
+  if(text.includes('party') || text.includes('night') || text.includes('club')) return ['🌙 El Nocturno','The legend who comes alive when the sun goes down.'];
+  if(text.includes('tequila') || text.includes('margarita') || text.includes('ranch water') || text.includes('barrel')) return ['🥃 El Catador','The connoisseur of the first toast.'];
+  if(text.includes('foodie') || text.includes('taco') || text.includes('al pastor') || text.includes('asada')) return ['🌮 El Bandido','The mischievous legend chasing flavor and fun.'];
+  if(text.includes('hype') || text.includes('fire') || text.includes('energy')) return ['🔥 El Fuego','The spark that keeps the crew moving.'];
+  if(text.includes('planner')) return ['🦅 El Águila','The one who sees the whole weekend from above.'];
+  return ['🍻 El Compadre','The one everyone can count on.'];
+}
+
+function updateWizard(){
+  document.querySelectorAll('.wizard-step').forEach((step, index) => step.classList.toggle('active', index === wizardStep));
+  $('wizardStepLabel').textContent = `Step ${wizardStep + 1} of 4`;
+  $('wizardStepName').textContent = wizardNames[wizardStep];
+  $('progressFill').style.width = `${((wizardStep + 1) / 4) * 100}%`;
+  $('wizardBack').style.visibility = wizardStep === 0 ? 'hidden' : 'visible';
+  $('wizardNext').classList.toggle('hidden', wizardStep === 3);
+  $('wizardSubmit').classList.toggle('hidden', wizardStep !== 3);
+}
+
+function canAdvance(){
+  if(wizardStep === 0){
+    const name = $('travelerName').value.trim();
+    if(!name){ $('travelerName').focus(); return false; }
+  }
+  return true;
+}
+
+function hydrateForm(passport){
+  if(!passport) return;
+  $('travelerName').value = passport.name || '';
+  $('favoriteDrink').value = passport.drink || '';
+  $('favoriteTaco').value = passport.taco || '';
+  $('walkupSong').value = passport.song || '';
+  $('funFact').value = passport.fact || '';
+  if(passport.frame){
+    selectedFrame = passport.frame;
+    document.querySelectorAll('.frame-option').forEach(btn => btn.classList.toggle('selected', btn.dataset.frame === selectedFrame));
+  }
+  if(passport.vibe){
+    const vibe = document.querySelector(`input[name="vibe"][value="${passport.vibe}"]`);
+    if(vibe) vibe.checked = true;
+  }
+}
+
+function hydratePlaza(passport){
+  if(!passport) return;
+  $('welcomeLine').textContent = 'Welcome back';
+  $('plazaName').textContent = passport.name || 'Traveler';
+  $('plazaTitle').textContent = `${passport.title} • ${passport.frameLabel}`;
+  $('passportPreview').classList.remove('hidden');
+  $('passportSeal').textContent = frameIcon(passport.frame);
+  $('passportTitlePreview').textContent = passport.title || 'Fiesta Traveler';
+  $('passportDetailsPreview').textContent = `${passport.name || 'Traveler'} is cleared for departure to Scottsdale.`;
+  renderPlazaExperience(passport);
+}
+
+
+function collectPassport(){
+  const base = {
+    name: $('travelerName').value.trim() || 'Traveler',
+    drink: $('favoriteDrink').value.trim(),
+    taco: $('favoriteTaco').value.trim(),
+    song: $('walkupSong').value.trim(),
+    fact: $('funFact').value.trim(),
+    frame: selectedFrame,
+    frameLabel: document.querySelector('.frame-option.selected')?.textContent.trim() || '🌵 Agave',
+    vibe: document.querySelector('input[name="vibe"]:checked')?.value || 'chill',
+    createdAt: new Date().toISOString(),
+    version: 'RC1.10'
+  };
+  const [title, description] = titleFor(base);
+  return { ...base, title, description };
+}
+
+function revealPassport(passport){
+  $('revealName').textContent = passport.name;
+  $('revealTitle').textContent = passport.title;
+  $('revealDescription').textContent = passport.description;
+  $('stampingLine').classList.remove('hidden');
+  setTimeout(() => $('stampingLine').textContent = 'Passport stamped. Welcome to the crew.', 900);
+  hydratePlaza(passport);
+  showScene('revealScene');
+}
+
+
+
+const CREW = [
+  { name:'Cesar', role:'El Rey de la Fiesta', icon:'👑', kind:'groom', team:'Honorary' },
+  { name:'Daniel', role:'El Padrino', icon:'🤵', kind:'host', team:'Fortaleza' },
+  { name:'Kevin', role:'Traveler', icon:'🥃', kind:'crew', team:'Fortaleza' },
+  { name:'Gerardo', role:'Traveler', icon:'🌵', kind:'crew', team:'Fortaleza' },
+  { name:'David', role:'Traveler', icon:'🔥', kind:'crew', team:'G4' },
+  { name:'Chucky', role:'Traveler', icon:'😂', kind:'crew', team:'G4' },
+  { name:'Jose', role:'Traveler', icon:'🍻', kind:'crew', team:'G4' },
+  { name:'Arturo', role:'Traveler', icon:'🏜️', kind:'crew', team:'Centenario' },
+  { name:'Frank', role:'Traveler', icon:'🌙', kind:'crew', team:'Centenario' }
 ];
 
-const VERSION='RC1.05 — The Plaza';
-const STORAGE_KEY='fiestaPassport';
-let passport=JSON.parse(localStorage.getItem(STORAGE_KEY)||'null')||{};
-let quizIndex=0;
-let quizScores={};
-const $=s=>document.querySelector(s);
-const $$=s=>document.querySelectorAll(s);
+const COCINA = [
+  { team:'Fortaleza', day:'Friday', icon:'🥃', members:['Daniel','Kevin','Gerardo'], note:'Breakfast and lunch duty before the desert adventure.', breakfast:'Crew-created menu', lunch:'Post-adventure fuel' },
+  { team:'G4', day:'Saturday', icon:'🌵', members:['David','Chucky','Jose'], note:'Pool day fuel and bachelor dinner prep vibes.', breakfast:'Crew-created menu', lunch:'Pool day spread' },
+  { team:'Centenario', day:'Sunday', icon:'👑', members:['Arturo','Frank','Cesar'], note:'Recovery day meals and final toast energy.', breakfast:'Crew-created menu', lunch:'Final day feast' }
+];
 
-function toast(message){const existing=document.querySelector('.toast');if(existing)existing.remove();const el=document.createElement('div');el.className='toast';el.textContent=message;document.body.appendChild(el);setTimeout(()=>el.remove(),2600)}
-function show(scene){const current=document.querySelector('.scene.active');if(current){current.classList.add('leaving');setTimeout(()=>current.classList.remove('leaving'),230)}$$('.scene').forEach(x=>x.classList.remove('active'));const next=$('#scene-'+scene);if(next)next.classList.add('active');window.scrollTo({top:0,behavior:'smooth'});if(scene==='quiz')startQuiz();}
-function save(){localStorage.setItem(STORAGE_KEY,JSON.stringify(passport))}
-function isComplete(){return Boolean(passport.firstName&&passport.title)}
-function setupInvitation(){const continueBtn=$('#continue-btn');if(!continueBtn)return;if(isComplete()){continueBtn.hidden=false;continueBtn.textContent=`Welcome back, ${passport.firstName}`;continueBtn.addEventListener('click',()=>{renderPlaza();show('plaza');toast('Your Fiesta Passport is ready.')})}}
-function hydrateForm(){const fields=['firstName','drink','taco','song','funFact','avatar'];fields.forEach(id=>{const el=$('#'+id); if(el&&passport[id]!==undefined)el.value=passport[id]}); if(passport.photo) setPhoto(passport.photo); if(passport.avatar) selectAvatar(passport.avatar,false)}
-function setPhoto(src){const prev=$('#photo-preview');const small=$('#passport-photo-small');const html=`<img src="${src}" alt="Passport photo">`; if(prev)prev.innerHTML=html;if(small)small.innerHTML=html;}
-function selectAvatar(value,saveNow=true){const hidden=$('#avatar'); if(hidden) hidden.value=value; $$('#avatar-grid button').forEach(b=>b.classList.toggle('selected',b.dataset.avatar===value)); if(saveNow){passport.avatar=value;save();}}
-function renderPlaza(){
- const name=passport.firstName||'Traveler';
- $('#welcome-line').textContent=`Bienvenido, ${name}`;
- $('#plaza-name').textContent=`${passport.avatar||'🌵 Agave'} ${name}`;
- $('#plaza-title').textContent=passport.title?`${passport.title} — ${TITLE_COPY[passport.title]||'Your story begins now.'}`:'Your story begins now.';
- $('#p-drink').textContent=passport.drink||'—';$('#p-taco').textContent=passport.taco||'—';$('#p-song').textContent=passport.song||'—';$('#p-fact').textContent=passport.funFact||'—';
- $('#passport-seal').textContent=`${passport.avatar||'🌵 Agave'} Seal`;$('#bp-name').textContent=name;
- if(passport.photo)setPhoto(passport.photo);
- renderSeats(name);
- renderCrew(name);
- renderStamps();
- updateCountdown();
+
+const COCINA_SCORE_KEY = 'projectFiesta.cocinaScores';
+function getCocinaScores(){
+  try { return JSON.parse(localStorage.getItem(COCINA_SCORE_KEY)) || {}; } catch(e){ return {}; }
 }
-function renderSeats(name){
- const grid=$('#seat-grid'); if(!grid)return;
- grid.innerHTML=CREW.map(([n,r,c])=>{
-   const active=n.toLowerCase()===String(name).toLowerCase();
-   const role=active?(passport.title||r):r;
-   const icon=active?(passport.photo?`<img src="${passport.photo}" alt="${n}">`:titleIcon(passport.title||role)):(n==='Cesar'?'👑':'👤');
-   return `<div class="seat-card ${c} ${active?'active':''} ${!active&&r==='Traveler'?'empty':''}"><div class="seat-icon">${icon}</div><strong>${n}</strong><small>${role}</small></div>`
- }).join('');
- const complete=CREW.length;
- const caption=$('#plaza-caption'); if(caption) caption.textContent=`${name} has arrived. ${complete} seats are reserved around the campfire.`;
+function saveCocinaScore(team, score){
+  const scores = getCocinaScores();
+  scores[team] = Number(score);
+  localStorage.setItem(COCINA_SCORE_KEY, JSON.stringify(scores));
+  renderCocinaChallenge();
 }
-function renderCrew(name){
- const crew=$('#crew-grid'); if(!crew)return;
- crew.innerHTML=CREW.map(([n,r,c])=>`<div class="crew-member ${c}"><div>${n}<br><small>${n===name?(passport.title||r):r}</small></div></div>`).join('')
+function currentChampion(scores){
+  const entries = Object.entries(scores).filter(([,v]) => Number(v) > 0);
+  if(!entries.length) return null;
+  entries.sort((a,b) => b[1] - a[1]);
+  return entries[0];
 }
-const STAMPS=['Casa Check-In','First Toast','Desert Adventure','Cocina Crew','Pool Day','Bachelor Dinner','Awards Night','Final Toast'];
-function renderStamps(){
- const el=$('#stamp-grid'); if(!el)return;
- const earned=new Set(passport.stamps||[]);
- el.innerHTML=STAMPS.map(s=>`<button class="stamp ${earned.has(s)?'done':''}" data-stamp="${s}"><span>${earned.has(s)?'✅':'🛂'}</span>${s}</button>`).join('');
+
+function normalizeName(name){ return (name || '').trim().toLowerCase(); }
+
+function renderPlazaExperience(passport){
+  const current = normalizeName(passport?.name);
+  const knownNames = new Set(CREW.map(c => normalizeName(c.name)));
+  const currentIsCrew = knownNames.has(current);
+  const arrivedCount = currentIsCrew ? 1 : (passport ? 1 : 0);
+  const seal = passport ? frameIcon(passport.frame) : '🌵';
+  if($('plazaSeal')) $('plazaSeal').textContent = seal;
+  if($('arrivalCount')) $('arrivalCount').textContent = `${arrivedCount} / 9 Arrived`;
+  if($('plazaStatus')) $('plazaStatus').textContent = passport
+    ? `${passport.name} has claimed a seat in La Plaza. The campfire is getting warmer.`
+    : 'The Plaza is open. As each amigo receives their passport, their seat comes alive.';
+  if($('liveStatusTitle')) $('liveStatusTitle').textContent = passport ? 'Passport received. Seat claimed.' : 'Preparing the first toast...';
+  if($('liveStatusText')) $('liveStatusText').textContent = passport
+    ? `${passport.title} is cleared for departure to Scottsdale.`
+    : 'Complete your passport, claim your Fiesta title, and meet the crew in La Plaza.';
+
+  const seatGrid = $('seatGrid');
+  if(seatGrid){
+    seatGrid.innerHTML = CREW.map(person => {
+      const isCurrent = normalizeName(person.name) === current;
+      const arrived = isCurrent;
+      return `<button class="seat ${arrived ? 'arrived' : ''} ${person.kind}" type="button" aria-label="${person.name}">
+        <span class="seat-icon">${arrived ? (passport ? frameIcon(passport.frame) : person.icon) : '◌'}</span>
+        <span class="seat-name">${person.name}</span>
+        <span class="seat-role">${arrived ? 'Arrived' : person.role}</span>
+      </button>`;
+    }).join('');
+  }
+
+  const crewGrid = $('crewGrid');
+  if(crewGrid){
+    crewGrid.innerHTML = CREW.map(person => {
+      const isCurrent = normalizeName(person.name) === current;
+      const role = isCurrent && passport?.title ? passport.title : person.role;
+      const icon = isCurrent && passport ? frameIcon(passport.frame) : person.icon;
+      return `<article class="crew-card ${isCurrent ? 'current' : ''}">
+        <div class="crew-avatar">${icon}</div>
+        <div><h3>${person.name}</h3><p>${role} • ${person.team}</p></div>
+      </article>`;
+    }).join('');
+  }
+
+  const cocinaGrid = $('cocinaGrid');
+  if(cocinaGrid){
+    cocinaGrid.innerHTML = COCINA.map(team => `<article class="cocina-card">
+      <p class="eyebrow">${team.day}</p>
+      <h3>🥃 Team ${team.team}</h3>
+      <p>${team.note}</p>
+      <div class="team-members">${team.members.map(m => `<span class="team-pill">${m}</span>`).join('')}</div>
+    </article>`).join('');
+  }
 }
-function toggleStamp(stamp){
- const stamps=new Set(passport.stamps||[]);
- stamps.has(stamp)?stamps.delete(stamp):stamps.add(stamp);
- passport.stamps=[...stamps]; save(); renderStamps(); toast(stamps.has(stamp)?`${stamp} stamped.`:`${stamp} removed.`);
+
+
+function renderCocinaChallenge(){
+  const grid = $('cocinaChallengeGrid');
+  if(!grid) return;
+  const scores = getCocinaScores();
+  const champ = currentChampion(scores);
+  grid.innerHTML = COCINA.map(team => {
+    const score = scores[team.team] || 0;
+    const isChamp = champ && champ[0] === team.team && Number(champ[1]) > 0;
+    return `<article class="challenge-card">
+      <div class="challenge-top">
+        <div>
+          <p class="eyebrow">${team.day} Cocina Crew</p>
+          <h3>${team.icon} Team ${team.team}</h3>
+          <p class="challenge-meta">${team.members.join(' • ')}</p>
+        </div>
+        <div class="team-mark">${team.icon}</div>
+      </div>
+      <p class="muted">${team.note}</p>
+      <div class="duty-list">
+        <div class="duty-pill"><strong>Breakfast</strong><span>${team.breakfast}</span></div>
+        <div class="duty-pill"><strong>Lunch</strong><span>${team.lunch}</span></div>
+      </div>
+      <div class="score-row">
+        <p class="score-note">Cesar's rating</p>
+        <div class="stars" data-team="${team.team}">
+          ${[1,2,3,4,5].map(n => `<button type="button" class="star-btn ${n <= score ? 'active' : ''}" data-score="${n}" aria-label="Rate ${team.team} ${n} stars">★</button>`).join('')}
+        </div>
+        <p class="score-note">${score ? `${score}/5 stars locked in on this device.` : 'Waiting for the groom’s verdict.'}</p>
+      </div>
+      ${isChamp ? '<div class="champion-banner">🏆 Current Cocina Champion</div>' : ''}
+    </article>`;
+  }).join('');
 }
+
 function updateCountdown(){
- const el=$('#countdown'); if(!el)return;
- const target=new Date('2026-07-09T15:13:00-07:00').getTime();
- const diff=target-Date.now();
- if(diff<=0){el.textContent='The fiesta has begun.';return;}
- const d=Math.floor(diff/86400000); const h=Math.floor((diff%86400000)/3600000); const m=Math.floor((diff%3600000)/60000);
- el.textContent=`Departure countdown: ${d}d ${h}h ${m}m`;
+  const el = $('countdownTimer');
+  if(!el) return;
+  const target = new Date('2026-07-09T16:00:00-07:00').getTime();
+  const diff = target - Date.now();
+  if(diff <= 0){ el.textContent = 'The Fiesta Has Begun'; return; }
+  const days = Math.floor(diff / 86400000);
+  const hours = Math.floor((diff % 86400000) / 3600000);
+  const minutes = Math.floor((diff % 3600000) / 60000);
+  el.textContent = days > 0 ? `${days}d ${hours}h ${minutes}m` : `${hours}h ${minutes}m`;
 }
 
-function titleIcon(title){
- const icons={
-  'El Rey de la Fiesta':'👑','El Padrino':'🤵','El Fuego':'🔥','El Nocturno':'🌙','El Compadre':'🍻','El Explorador':'🏜️','El Catador':'🥃','El Bandido':'🌮','El Escorpión':'🦂','El Águila':'🦅'
- };
- return icons[title]||'🌵';
+function startApp(){
+  const passport = getPassport();
+  const hasVisited = localStorage.getItem(VISIT_KEY) === 'true';
+  hydrateForm(passport);
+  hydratePlaza(passport);
+  renderPlazaExperience(passport);
+  updateCountdown();
+  setInterval(updateCountdown, 60000);
+  updateWizard();
+  if(hasVisited){
+    $('returningSplash').classList.remove('hidden');
+    setTimeout(() => { $('returningSplash').classList.add('hidden'); showScene(passport ? 'plaza' : 'invitation'); }, 1000);
+  } else {
+    localStorage.setItem(VISIT_KEY,'true');
+    showScene('invitation');
+  }
 }
-function revealTitle(title){
- const n=(passport.firstName||'').trim().toLowerCase();
- if(n==='cesar') title='El Rey de la Fiesta';
- if(n==='daniel') title='El Padrino';
- passport.title=title;
- passport.stamps=[...new Set([...(passport.stamps||[]),'Fiesta Title Revealed'])];
- save();
- $('#reveal-name').textContent=passport.firstName||'Traveler';
- $('#reveal-title').textContent=passport.title;
- $('#reveal-copy').textContent=TITLE_COPY[passport.title]||'Your story begins now.';
- $('#reveal-emblem').textContent=titleIcon(passport.title);
- $('#reveal-stamp').textContent=new Date().toLocaleDateString(undefined,{month:'short',day:'numeric'});
- show('reveal');
- const drum=$('#reveal-drum');
- const lines=['Consulting the desert...','Lighting the campfire...','Stamping your passport...','Your title is ready.'];
- lines.forEach((line,i)=>setTimeout(()=>{if(drum)drum.textContent=line},650*i));
- setTimeout(()=>toast('Passport stamped. Title revealed.'),2200);
-}
-function startQuiz(){quizIndex=0;quizScores={};renderQuiz()}
-function renderQuiz(){const q=QUIZ[quizIndex];const progress=Math.round(((quizIndex+1)/QUIZ.length)*100);const bar=$('#quiz-progress');const label=$('#quiz-progress-label'); if(label) label.textContent=`Question ${quizIndex+1} of ${QUIZ.length}`;bar.textContent=`Question ${quizIndex+1} of ${QUIZ.length}`;bar.style.setProperty('--progress',progress+'%');$('#quiz-card').innerHTML=`<h3>${q.q}</h3>`+q.a.map(([label,title])=>`<button class="quiz-answer" data-title="${title}">${label}</button>`).join('')}
-function answerQuiz(title){quizScores[title]=(quizScores[title]||0)+1;quizIndex++;if(quizIndex>=QUIZ.length){const winner=Object.entries(quizScores).sort((a,b)=>b[1]-a[1])[0]?.[0]||title;revealTitle(winner)}else{renderQuiz()}}
 
-$$('[data-go]').forEach(btn=>btn.addEventListener('click',()=>show(btn.dataset.go)));
-const form=$('#passport-form');if(form){form.addEventListener('submit',e=>{e.preventDefault();passport={...passport,firstName:$('#firstName').value.trim(),drink:$('#drink').value.trim(),taco:$('#taco').value.trim(),song:$('#song').value.trim(),funFact:$('#funFact').value.trim(),avatar:$('#avatar').value};save();toast('Passport stamped.');show('journey')})}
-const photoInput=$('#photoInput');if(photoInput){photoInput.addEventListener('change',e=>{const file=e.target.files?.[0];if(!file)return;const reader=new FileReader();reader.onload=()=>{passport.photo=reader.result;save();setPhoto(passport.photo);toast('Passport photo added.')};reader.readAsDataURL(file)})}
-const avatarGrid=$('#avatar-grid');if(avatarGrid){avatarGrid.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;selectAvatar(b.dataset.avatar)})}
-const quizCard=$('#quiz-card');if(quizCard){quizCard.addEventListener('click',e=>{const b=e.target.closest('.quiz-answer');if(!b)return;answerQuiz(b.dataset.title)})}
-const resetBtn=$('#reset-btn');if(resetBtn){resetBtn.addEventListener('click',()=>{if(confirm('Clear your local Fiesta Passport?')){localStorage.removeItem(STORAGE_KEY);passport={};location.reload()}})}
-const enterPlazaBtn=document.querySelector('#scene-reveal [data-go="plaza"]');if(enterPlazaBtn){enterPlazaBtn.addEventListener('click',()=>renderPlaza())}
+$('beginJourney')?.addEventListener('click', () => showScene('passportScene'));
+$('wizardNext')?.addEventListener('click', () => { if(canAdvance()){ wizardStep = Math.min(3, wizardStep + 1); updateWizard(); }});
+$('wizardBack')?.addEventListener('click', () => { wizardStep = Math.max(0, wizardStep - 1); updateWizard(); });
 
-const stampGrid=$('#stamp-grid');if(stampGrid){stampGrid.addEventListener('click',e=>{const b=e.target.closest('.stamp');if(!b)return;toggleStamp(b.dataset.stamp)})}
-$$('[data-jump]').forEach(btn=>btn.addEventListener('click',()=>{const target=$('#'+btn.dataset.jump); if(target) target.scrollIntoView({behavior:'smooth',block:'start'})}));
-setInterval(updateCountdown,60000);
+document.querySelectorAll('.frame-option').forEach(btn => btn.addEventListener('click', () => {
+  document.querySelectorAll('.frame-option').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  selectedFrame = btn.dataset.frame;
+}));
 
-if('serviceWorker'in navigator){navigator.serviceWorker.register('service-worker.js').catch(()=>{})}
-setupInvitation();hydrateForm();if(isComplete()){renderPlaza();show('plaza')}
+$('passportForm')?.addEventListener('submit', (e) => {
+  e.preventDefault();
+  const passport = collectPassport();
+  savePassport(passport);
+  revealPassport(passport);
+});
+
+$('enterPlaza')?.addEventListener('click', () => showScene('plaza'));
+$('resetApp')?.addEventListener('click', () => {
+  localStorage.removeItem(STORAGE_KEY);
+  localStorage.removeItem(OLD_STORAGE_KEY);
+  localStorage.removeItem(VISIT_KEY);
+  location.reload();
+});
+
+document.querySelectorAll('.bottom-nav button,.feature-card[data-target]').forEach(btn => btn.addEventListener('click', () => {
+  const target = btn.dataset.target;
+  if(target) showScene(target);
+  if(btn.dataset.panel) alert('Coming soon: ' + btn.dataset.panel + ' experience');
+}));
+
+
+document.addEventListener('click', (event) => {
+  const star = event.target.closest('.star-btn');
+  if(!star) return;
+  const wrap = star.closest('.stars');
+  if(!wrap) return;
+  saveCocinaScore(wrap.dataset.team, star.dataset.score);
+});
+
+if('serviceWorker' in navigator){ window.addEventListener('load', () => navigator.serviceWorker.register('service-worker.js').catch(()=>{})); }
+startApp();
