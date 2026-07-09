@@ -17,6 +17,43 @@ let selectedFrame = 'agave';
 let wizardStep = 0;
 let currentTraveler = null;
 let liveTravelers = [];
+let cloudSyncAttempted = false;
+
+function setCloudStatus(message, tone = 'neutral') {
+  const text = message || '';
+  console.log('[Campfire]', text);
+
+  const liveStatus = $('liveStatusText');
+  if (liveStatus && text) {
+    liveStatus.dataset.syncTone = tone;
+    liveStatus.textContent = text;
+  }
+}
+
+async function syncPassportToCloud(passport, reason = 'manual') {
+  if (!passport) return null;
+
+  try {
+    if (!currentTraveler) {
+      currentTraveler = await initializeTravelerAuth();
+    }
+
+    const cloudId = await saveTravelerPassport(currentTraveler.uid, {
+      ...passport,
+      lastSyncReason: reason,
+      lastLocalSyncAt: new Date().toISOString()
+    });
+
+    const syncedPassport = { ...passport, cloudId, cloudSyncedAt: new Date().toISOString(), version: 'RC2.05' };
+    savePassport(syncedPassport);
+    setCloudStatus(`☁️ Passport synced to the Campfire as ${syncedPassport.name}.`, 'success');
+    return cloudId;
+  } catch (error) {
+    console.error('Cloud passport sync failed:', error);
+    setCloudStatus('⚠️ Passport saved on this phone, but cloud sync failed. Check Firestore rules/test mode.', 'error');
+    throw error;
+  }
+}
 
 function showScene(id){
   scenes.forEach(s => $(s)?.classList.add('hidden'));
@@ -48,7 +85,7 @@ function normalizePassport(data){
     title: data.title || data.fiestaTitle || '',
     description: data.description || data.titleDescription || '',
     createdAt: data.createdAt || new Date().toISOString(),
-    version: 'RC2.04'
+    version: 'RC2.05'
   };
   if(!normalized.title || !normalized.description){
     const [title, description] = titleFor(normalized);
@@ -149,7 +186,7 @@ function collectPassport(){
     frameLabel: document.querySelector('.frame-option.selected')?.textContent.trim() || '🌵 Agave',
     vibe: document.querySelector('input[name="vibe"]:checked')?.value || 'chill',
     createdAt: new Date().toISOString(),
-    version: 'RC2.04'
+    version: 'RC2.05'
   };
   const [title, description] = titleFor(base);
   return { ...base, title, description };
@@ -339,6 +376,17 @@ async function startApp(){
   hydrateForm(passport);
   hydratePlaza(passport);
   renderPlazaExperience(passport);
+
+  // RC2.05: If this phone already had a local passport from an older release,
+  // automatically migrate it to Firebase so friends do not need to resubmit.
+  if (passport && !cloudSyncAttempted) {
+    cloudSyncAttempted = true;
+    syncPassportToCloud(passport, passport.cloudId ? 'startup-refresh' : 'startup-migration')
+      .catch(() => {
+        // Keep local mode available even if Firestore rejects the write.
+      });
+  }
+
   updateCountdown();
   setInterval(updateCountdown, 60000);
   updateWizard();
@@ -347,6 +395,12 @@ async function startApp(){
     subscribeToTravelers((travelers) => {
       liveTravelers = travelers;
       renderPlazaExperience(getPassport());
+      if (travelers.length > 0) {
+        setCloudStatus(`🔥 ${travelers.length} traveler${travelers.length === 1 ? '' : 's'} live in La Plaza.`, 'success');
+      }
+    }, (error) => {
+      console.error('Live traveler subscription failed:', error);
+      setCloudStatus('⚠️ Live Plaza could not connect to Firestore. Check rules/test mode.', 'error');
     });
   } catch(error) {
     console.warn('Live traveler subscription unavailable:', error);
@@ -377,17 +431,13 @@ $('passportForm')?.addEventListener('submit', async (e) => {
   savePassport(passport);
 
   try {
-    if(!currentTraveler){
-      currentTraveler = await initializeTravelerAuth();
-    }
-    await saveTravelerPassport(currentTraveler.uid, passport);
-    console.log('Passport saved to Firebase:', passport.name);
+    await syncPassportToCloud(passport, 'passport-submit');
   } catch(error) {
     console.warn('Passport saved locally, but Firebase save failed:', error);
     alert('Your passport was saved on this phone, but cloud sync did not complete. Check Firestore test mode/rules and try again.');
   }
 
-  revealPassport(passport);
+  revealPassport(getPassport() || passport);
 });
 
 $('enterPlaza')?.addEventListener('click', () => showScene('plaza'));
