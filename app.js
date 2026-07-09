@@ -9,7 +9,9 @@ const LEGACY_STORAGE_KEYS = [
   'fiestaPassport'
 ];
 const VISIT_KEY = 'projectFiesta.hasVisited';
-const MIGRATION_KEY = 'projectFiesta.storageMigrated.RC1_11';
+const MIGRATION_KEY = 'projectFiesta.storageMigrated.RC2_10';
+const CLOUD_SYNC_KEY = 'projectFiesta.cloudSynced.RC2_10';
+const APP_VERSION = 'RC2.10';
 const scenes = ['invitation','passportScene','revealScene','plaza'];
 const wizardNames = ['Traveler','Signature','Frame','Spirit'];
 const $ = (id) => document.getElementById(id);
@@ -17,43 +19,6 @@ let selectedFrame = 'agave';
 let wizardStep = 0;
 let currentTraveler = null;
 let liveTravelers = [];
-let cloudSyncAttempted = false;
-
-function setCloudStatus(message, tone = 'neutral') {
-  const text = message || '';
-  console.log('[Campfire]', text);
-
-  const liveStatus = $('liveStatusText');
-  if (liveStatus && text) {
-    liveStatus.dataset.syncTone = tone;
-    liveStatus.textContent = text;
-  }
-}
-
-async function syncPassportToCloud(passport, reason = 'manual') {
-  if (!passport) return null;
-
-  try {
-    if (!currentTraveler) {
-      currentTraveler = await initializeTravelerAuth();
-    }
-
-    const cloudId = await saveTravelerPassport(currentTraveler.uid, {
-      ...passport,
-      lastSyncReason: reason,
-      lastLocalSyncAt: new Date().toISOString()
-    });
-
-    const syncedPassport = { ...passport, cloudId, cloudSyncedAt: new Date().toISOString(), version: 'RC2.05' };
-    savePassport(syncedPassport);
-    setCloudStatus(`☁️ Passport synced to the Campfire as ${syncedPassport.name}.`, 'success');
-    return cloudId;
-  } catch (error) {
-    console.error('Cloud passport sync failed:', error);
-    setCloudStatus('⚠️ Passport saved on this phone, but cloud sync failed. Check Firestore rules/test mode.', 'error');
-    throw error;
-  }
-}
 
 function showScene(id){
   scenes.forEach(s => $(s)?.classList.add('hidden'));
@@ -85,7 +50,7 @@ function normalizePassport(data){
     title: data.title || data.fiestaTitle || '',
     description: data.description || data.titleDescription || '',
     createdAt: data.createdAt || new Date().toISOString(),
-    version: 'RC2.05'
+    version: APP_VERSION
   };
   if(!normalized.title || !normalized.description){
     const [title, description] = titleFor(normalized);
@@ -186,7 +151,7 @@ function collectPassport(){
     frameLabel: document.querySelector('.frame-option.selected')?.textContent.trim() || '🌵 Agave',
     vibe: document.querySelector('input[name="vibe"]:checked')?.value || 'chill',
     createdAt: new Date().toISOString(),
-    version: 'RC2.05'
+    version: APP_VERSION
   };
   const [title, description] = titleFor(base);
   return { ...base, title, description };
@@ -241,6 +206,44 @@ function currentChampion(scores){
 }
 
 function normalizeName(name){ return (name || '').trim().toLowerCase(); }
+
+function travelerDocIdFromPassport(passport){
+  const rosterMatch = CREW.find(person => normalizeName(person.name) === normalizeName(passport?.name));
+  if(rosterMatch){
+    return normalizeName(rosterMatch.name).replace(/[^a-z0-9]+/g, '-');
+  }
+  const namePart = normalizeName(passport?.name || 'traveler').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'traveler';
+  const deviceId = currentTraveler?.uid || localStorage.getItem('projectFiesta.deviceTravelerId') || 'device';
+  return `${namePart}-${String(deviceId).slice(0,8)}`;
+}
+
+function setCloudStatus(title, text){
+  if($('liveStatusTitle')) $('liveStatusTitle').textContent = title;
+  if($('liveStatusText')) $('liveStatusText').textContent = text;
+}
+
+async function syncPassportToCloud(passport, reason='manual'){
+  if(!passport) return false;
+  try {
+    if(!currentTraveler){ currentTraveler = await initializeTravelerAuth(); }
+    const travelerId = travelerDocIdFromPassport(passport);
+    await saveTravelerPassport(travelerId, {
+      ...passport,
+      nameKey: normalizeName(passport.name),
+      deviceTravelerId: currentTraveler?.uid || null,
+      syncReason: reason,
+      localCreatedAt: passport.createdAt || new Date().toISOString()
+    });
+    localStorage.setItem(CLOUD_SYNC_KEY, JSON.stringify({ travelerId, name: passport.name, syncedAt: new Date().toISOString(), version: APP_VERSION }));
+    console.log('Project Fiesta cloud sync complete:', travelerId, passport.name);
+    setCloudStatus('Cloud sync connected.', `${passport.name || 'Traveler'} is saved to Firebase. Check Firestore → travelers → ${travelerId}.`);
+    return true;
+  } catch(error) {
+    console.error('Project Fiesta cloud sync failed:', error);
+    setCloudStatus('Cloud sync needs attention.', error?.message || 'Firebase write failed. Check Firestore rules/test mode.');
+    return false;
+  }
+}
 
 function renderPlazaExperience(passport){
   const current = normalizeName(passport?.name);
@@ -376,17 +379,7 @@ async function startApp(){
   hydrateForm(passport);
   hydratePlaza(passport);
   renderPlazaExperience(passport);
-
-  // RC2.05: If this phone already had a local passport from an older release,
-  // automatically migrate it to Firebase so friends do not need to resubmit.
-  if (passport && !cloudSyncAttempted) {
-    cloudSyncAttempted = true;
-    syncPassportToCloud(passport, passport.cloudId ? 'startup-refresh' : 'startup-migration')
-      .catch(() => {
-        // Keep local mode available even if Firestore rejects the write.
-      });
-  }
-
+  if(passport){ syncPassportToCloud(passport, 'startup-migration'); }
   updateCountdown();
   setInterval(updateCountdown, 60000);
   updateWizard();
@@ -395,12 +388,11 @@ async function startApp(){
     subscribeToTravelers((travelers) => {
       liveTravelers = travelers;
       renderPlazaExperience(getPassport());
-      if (travelers.length > 0) {
-        setCloudStatus(`🔥 ${travelers.length} traveler${travelers.length === 1 ? '' : 's'} live in La Plaza.`, 'success');
+      if(travelers.length){
+        setCloudStatus('Live Plaza connected.', `${travelers.length} traveler${travelers.length === 1 ? '' : 's'} loaded from Firebase.`);
       }
     }, (error) => {
-      console.error('Live traveler subscription failed:', error);
-      setCloudStatus('⚠️ Live Plaza could not connect to Firestore. Check rules/test mode.', 'error');
+      setCloudStatus('Live Plaza could not connect.', error?.message || 'Firestore listener failed.');
     });
   } catch(error) {
     console.warn('Live traveler subscription unavailable:', error);
@@ -431,13 +423,16 @@ $('passportForm')?.addEventListener('submit', async (e) => {
   savePassport(passport);
 
   try {
+    if(!currentTraveler){
+      currentTraveler = await initializeTravelerAuth();
+    }
     await syncPassportToCloud(passport, 'passport-submit');
   } catch(error) {
     console.warn('Passport saved locally, but Firebase save failed:', error);
     alert('Your passport was saved on this phone, but cloud sync did not complete. Check Firestore test mode/rules and try again.');
   }
 
-  revealPassport(getPassport() || passport);
+  revealPassport(passport);
 });
 
 $('enterPlaza')?.addEventListener('click', () => showScene('plaza'));

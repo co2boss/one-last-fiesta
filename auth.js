@@ -1,5 +1,5 @@
 // Project Fiesta — Traveler Identity Module
-// RC2.04 — Local traveler identity for Firestore sync
+// RC2.10 — Local traveler identity for Firestore sync
 
 const DEVICE_ID_KEY = "projectFiesta.deviceTravelerId";
 

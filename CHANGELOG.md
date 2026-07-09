@@ -13,9 +13,9 @@
 ## v0.1.0
 - Initial project foundation.
 
-## RC2.05 - Firebase Migration
+## RC2.10 - First Contact
 
-- Automatically migrates existing local passports to Firestore on app startup.
-- Prevents duplicate traveler documents by using stable roster-based document IDs.
-- Adds clearer cloud sync status messages in the Plaza.
-- Keeps local passport fallback if Firestore is unavailable.
+- Syncs existing local passports to Firestore on app startup.
+- Saves passport submissions using stable roster-based traveler document IDs.
+- Adds visible Plaza cloud status messages for successful sync or Firebase errors.
+- Updates the service worker cache to force the newest app files.

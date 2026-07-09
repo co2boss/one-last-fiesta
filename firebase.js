@@ -1,5 +1,5 @@
 // Project Fiesta — Firebase Connection
-// RC2.04 — Campfire Live Plaza
+// RC2.10 — First Contact
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
 import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-analytics.js";
