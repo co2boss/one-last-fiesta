@@ -1,14 +1,14 @@
 // Project Fiesta — Firestore Module
-// RC2.00 — Campfire Foundation
+// RC2.03 — Cloud Passport Save + Live Travelers
 
 import {
   collection,
-  addDoc,
-  serverTimestamp,
-  onSnapshot,
-  query,
-  orderBy,
   doc,
+  onSnapshot,
+  orderBy,
+  query,
+  serverTimestamp,
+  setDoc,
   updateDoc
 } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js";
 
@@ -16,24 +16,28 @@ import { db } from "./firebase.js";
 
 const travelersRef = collection(db, "travelers");
 
-/**
- * Create a new traveler passport
- */
-export async function createTraveler(passport) {
-  const docRef = await addDoc(travelersRef, {
-    ...passport,
-    joinedAt: serverTimestamp(),
-    online: true,
-    checkedIn: false,
-    version: "RC2.00"
-  });
+export async function saveTravelerPassport(travelerId, passport) {
+  if (!travelerId) throw new Error("Missing travelerId for passport save.");
 
-  return docRef.id;
+  const travelerDoc = doc(db, "travelers", travelerId);
+
+  await setDoc(
+    travelerDoc,
+    {
+      ...passport,
+      travelerId,
+      online: true,
+      checkedIn: false,
+      updatedAt: serverTimestamp(),
+      joinedAt: passport.joinedAt || serverTimestamp(),
+      cloudVersion: "RC2.03"
+    },
+    { merge: true }
+  );
+
+  return travelerId;
 }
 
-/**
- * Listen for live traveler updates
- */
 export function subscribeToTravelers(callback) {
   const q = query(travelersRef, orderBy("joinedAt", "asc"));
 
@@ -41,21 +45,18 @@ export function subscribeToTravelers(callback) {
     const travelers = [];
 
     snapshot.forEach((docSnap) => {
-      travelers.push({
-        id: docSnap.id,
-        ...docSnap.data()
-      });
+      if (docSnap.id === "setup") return;
+      travelers.push({ id: docSnap.id, ...docSnap.data() });
     });
 
     callback(travelers);
   });
 }
 
-/**
- * Update traveler status
- */
 export async function updateTraveler(id, updates) {
   const travelerDoc = doc(db, "travelers", id);
-
-  await updateDoc(travelerDoc, updates);
+  await updateDoc(travelerDoc, {
+    ...updates,
+    updatedAt: serverTimestamp()
+  });
 }

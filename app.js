@@ -1,3 +1,6 @@
+import { initializeTravelerAuth, getCurrentTravelerId } from './auth.js';
+import { saveTravelerPassport, subscribeToTravelers } from './firestore.js';
+
 const STORAGE_KEY = 'projectFiesta.passport.current';
 const LEGACY_STORAGE_KEYS = [
   'projectFiesta.passport.current',
@@ -12,6 +15,8 @@ const wizardNames = ['Traveler','Signature','Frame','Spirit'];
 const $ = (id) => document.getElementById(id);
 let selectedFrame = 'agave';
 let wizardStep = 0;
+let currentTraveler = null;
+let liveTravelers = [];
 
 function showScene(id){
   scenes.forEach(s => $(s)?.classList.add('hidden'));
@@ -43,7 +48,7 @@ function normalizePassport(data){
     title: data.title || data.fiestaTitle || '',
     description: data.description || data.titleDescription || '',
     createdAt: data.createdAt || new Date().toISOString(),
-    version: 'RC1.11'
+    version: 'RC2.03'
   };
   if(!normalized.title || !normalized.description){
     const [title, description] = titleFor(normalized);
@@ -144,7 +149,7 @@ function collectPassport(){
     frameLabel: document.querySelector('.frame-option.selected')?.textContent.trim() || '🌵 Agave',
     vibe: document.querySelector('input[name="vibe"]:checked')?.value || 'chill',
     createdAt: new Date().toISOString(),
-    version: 'RC1.11'
+    version: 'RC2.03'
   };
   const [title, description] = titleFor(base);
   return { ...base, title, description };
@@ -202,29 +207,46 @@ function normalizeName(name){ return (name || '').trim().toLowerCase(); }
 
 function renderPlazaExperience(passport){
   const current = normalizeName(passport?.name);
-  const knownNames = new Set(CREW.map(c => normalizeName(c.name)));
-  const currentIsCrew = knownNames.has(current);
-  const arrivedCount = currentIsCrew ? 1 : (passport ? 1 : 0);
+  const liveByName = new Map();
+  liveTravelers.forEach(t => {
+    const key = normalizeName(t.name);
+    if(key) liveByName.set(key, t);
+  });
+
+  const arrivedNames = new Set();
+  liveTravelers.forEach(t => {
+    const name = normalizeName(t.name);
+    if(name) arrivedNames.add(name);
+  });
+  if(current) arrivedNames.add(current);
+
+  const crewNameSet = new Set(CREW.map(c => normalizeName(c.name)));
+  const arrivedCrewCount = [...arrivedNames].filter(name => crewNameSet.has(name)).length;
+  const arrivedCount = Math.min(arrivedCrewCount, CREW.length);
   const seal = passport ? frameIcon(passport.frame) : '🌵';
+
   if($('plazaSeal')) $('plazaSeal').textContent = seal;
   if($('arrivalCount')) $('arrivalCount').textContent = `${arrivedCount} / 9 Arrived`;
-  if($('plazaStatus')) $('plazaStatus').textContent = passport
-    ? `${passport.name} has claimed a seat in La Plaza. The campfire is getting warmer.`
+  if($('plazaStatus')) $('plazaStatus').textContent = arrivedCount > 0
+    ? `${arrivedCount} amigo${arrivedCount === 1 ? '' : 's'} have claimed a seat in La Plaza. The campfire is getting warmer.`
     : 'The Plaza is open. As each amigo receives their passport, their seat comes alive.';
-  if($('liveStatusTitle')) $('liveStatusTitle').textContent = passport ? 'Passport received. Seat claimed.' : 'Preparing the first toast...';
-  if($('liveStatusText')) $('liveStatusText').textContent = passport
-    ? `${passport.title} is cleared for departure to Scottsdale.`
+  if($('liveStatusTitle')) $('liveStatusTitle').textContent = arrivedCount > 0 ? 'The campfire is live.' : 'Preparing the first toast...';
+  if($('liveStatusText')) $('liveStatusText').textContent = arrivedCount > 0
+    ? 'Passports now sync through Firebase, so the Plaza updates as the crew joins.'
     : 'Complete your passport, claim your Fiesta title, and meet the crew in La Plaza.';
 
   const seatGrid = $('seatGrid');
   if(seatGrid){
     seatGrid.innerHTML = CREW.map(person => {
-      const isCurrent = normalizeName(person.name) === current;
-      const arrived = isCurrent;
+      const key = normalizeName(person.name);
+      const live = liveByName.get(key);
+      const isCurrent = key === current;
+      const arrived = Boolean(live) || isCurrent;
+      const displayPassport = live || (isCurrent ? passport : null);
       return `<button class="seat ${arrived ? 'arrived' : ''} ${person.kind}" type="button" aria-label="${person.name}">
-        <span class="seat-icon">${arrived ? (passport ? frameIcon(passport.frame) : person.icon) : '◌'}</span>
+        <span class="seat-icon">${arrived ? frameIcon(displayPassport?.frame) : '◌'}</span>
         <span class="seat-name">${person.name}</span>
-        <span class="seat-role">${arrived ? 'Arrived' : person.role}</span>
+        <span class="seat-role">${arrived ? (displayPassport?.title || 'Arrived') : person.role}</span>
       </button>`;
     }).join('');
   }
@@ -232,10 +254,13 @@ function renderPlazaExperience(passport){
   const crewGrid = $('crewGrid');
   if(crewGrid){
     crewGrid.innerHTML = CREW.map(person => {
-      const isCurrent = normalizeName(person.name) === current;
-      const role = isCurrent && passport?.title ? passport.title : person.role;
-      const icon = isCurrent && passport ? frameIcon(passport.frame) : person.icon;
-      return `<article class="crew-card ${isCurrent ? 'current' : ''}">
+      const key = normalizeName(person.name);
+      const live = liveByName.get(key);
+      const isCurrent = key === current;
+      const displayPassport = live || (isCurrent ? passport : null);
+      const role = displayPassport?.title || person.role;
+      const icon = displayPassport ? frameIcon(displayPassport.frame) : person.icon;
+      return `<article class="crew-card ${isCurrent ? 'current' : ''} ${displayPassport ? 'arrived' : ''}">
         <div class="crew-avatar">${icon}</div>
         <div><h3>${person.name}</h3><p>${role} • ${person.team}</p></div>
       </article>`;
@@ -300,15 +325,33 @@ function updateCountdown(){
   el.textContent = days > 0 ? `${days}d ${hours}h ${minutes}m` : `${hours}h ${minutes}m`;
 }
 
-function startApp(){
+async function startApp(){
   const passport = getPassport();
   const hasVisited = localStorage.getItem(VISIT_KEY) === 'true';
+
+  try {
+    currentTraveler = await initializeTravelerAuth();
+    console.log('Campfire connected as traveler:', currentTraveler.uid);
+  } catch(error) {
+    console.warn('Campfire cloud connection unavailable. Local mode still works.', error);
+  }
+
   hydrateForm(passport);
   hydratePlaza(passport);
   renderPlazaExperience(passport);
   updateCountdown();
   setInterval(updateCountdown, 60000);
   updateWizard();
+
+  try {
+    subscribeToTravelers((travelers) => {
+      liveTravelers = travelers;
+      renderPlazaExperience(getPassport());
+    });
+  } catch(error) {
+    console.warn('Live traveler subscription unavailable:', error);
+  }
+
   if(hasVisited){
     $('returningSplash').classList.remove('hidden');
     setTimeout(() => { $('returningSplash').classList.add('hidden'); showScene(passport ? 'plaza' : 'invitation'); }, 1000);
@@ -328,10 +371,22 @@ document.querySelectorAll('.frame-option').forEach(btn => btn.addEventListener('
   selectedFrame = btn.dataset.frame;
 }));
 
-$('passportForm')?.addEventListener('submit', (e) => {
+$('passportForm')?.addEventListener('submit', async (e) => {
   e.preventDefault();
   const passport = collectPassport();
   savePassport(passport);
+
+  try {
+    if(!currentTraveler){
+      currentTraveler = await initializeTravelerAuth();
+    }
+    await saveTravelerPassport(currentTraveler.uid, passport);
+    console.log('Passport saved to Firebase:', passport.name);
+  } catch(error) {
+    console.warn('Passport saved locally, but Firebase save failed:', error);
+    alert('Your passport was saved on this phone, but cloud sync did not complete. We can fix this after checking Firebase Auth/Firestore settings.');
+  }
+
   revealPassport(passport);
 });
 
