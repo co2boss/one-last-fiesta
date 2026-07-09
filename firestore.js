@@ -1,5 +1,5 @@
 // Project Fiesta — Firestore Module
-// RC2.03 — Cloud Passport Save + Live Travelers
+// RC2.04 — Cloud Passport Save + Live Plaza
 
 import {
   collection,
@@ -30,7 +30,7 @@ export async function saveTravelerPassport(travelerId, passport) {
       checkedIn: false,
       updatedAt: serverTimestamp(),
       joinedAt: passport.joinedAt || serverTimestamp(),
-      cloudVersion: "RC2.03"
+      cloudVersion: "RC2.04"
     },
     { merge: true }
   );

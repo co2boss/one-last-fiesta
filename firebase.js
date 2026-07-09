@@ -1,10 +1,9 @@
 // Project Fiesta — Firebase Connection
-// RC2.00 — Campfire Foundation
+// RC2.04 — Campfire Live Plaza
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
 import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-analytics.js";
 import { getFirestore } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js";
-import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBgaCetyeuyZ1EgrSgC10_CjyfyKzpYiQg",
@@ -18,15 +17,9 @@ const firebaseConfig = {
 
 export const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app);
-export const auth = getAuth(app);
 
 try {
   getAnalytics(app);
 } catch (error) {
   console.warn("Analytics unavailable:", error);
-}
-
-export async function signInTraveler() {
-  const result = await signInAnonymously(auth);
-  return result.user;
 }

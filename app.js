@@ -48,7 +48,7 @@ function normalizePassport(data){
     title: data.title || data.fiestaTitle || '',
     description: data.description || data.titleDescription || '',
     createdAt: data.createdAt || new Date().toISOString(),
-    version: 'RC2.03'
+    version: 'RC2.04'
   };
   if(!normalized.title || !normalized.description){
     const [title, description] = titleFor(normalized);
@@ -149,7 +149,7 @@ function collectPassport(){
     frameLabel: document.querySelector('.frame-option.selected')?.textContent.trim() || '🌵 Agave',
     vibe: document.querySelector('input[name="vibe"]:checked')?.value || 'chill',
     createdAt: new Date().toISOString(),
-    version: 'RC2.03'
+    version: 'RC2.04'
   };
   const [title, description] = titleFor(base);
   return { ...base, title, description };
@@ -232,7 +232,7 @@ function renderPlazaExperience(passport){
     : 'The Plaza is open. As each amigo receives their passport, their seat comes alive.';
   if($('liveStatusTitle')) $('liveStatusTitle').textContent = arrivedCount > 0 ? 'The campfire is live.' : 'Preparing the first toast...';
   if($('liveStatusText')) $('liveStatusText').textContent = arrivedCount > 0
-    ? 'Passports now sync through Firebase, so the Plaza updates as the crew joins.'
+    ? 'Passports now sync through Firebase, so every phone sees the crew join the Plaza live.'
     : 'Complete your passport, claim your Fiesta title, and meet the crew in La Plaza.';
 
   const seatGrid = $('seatGrid');
@@ -331,7 +331,7 @@ async function startApp(){
 
   try {
     currentTraveler = await initializeTravelerAuth();
-    console.log('Campfire connected as traveler:', currentTraveler.uid);
+    console.log('Campfire device connected as traveler:', currentTraveler.uid);
   } catch(error) {
     console.warn('Campfire cloud connection unavailable. Local mode still works.', error);
   }
@@ -384,7 +384,7 @@ $('passportForm')?.addEventListener('submit', async (e) => {
     console.log('Passport saved to Firebase:', passport.name);
   } catch(error) {
     console.warn('Passport saved locally, but Firebase save failed:', error);
-    alert('Your passport was saved on this phone, but cloud sync did not complete. We can fix this after checking Firebase Auth/Firestore settings.');
+    alert('Your passport was saved on this phone, but cloud sync did not complete. Check Firestore test mode/rules and try again.');
   }
 
   revealPassport(passport);

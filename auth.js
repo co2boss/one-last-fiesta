@@ -1,19 +1,37 @@
-// Project Fiesta — Auth Module
-// RC2.02 — Anonymous Traveler Authentication
+// Project Fiesta — Traveler Identity Module
+// RC2.04 — Local traveler identity for Firestore sync
 
-import { auth, signInTraveler } from "./firebase.js";
+const DEVICE_ID_KEY = "projectFiesta.deviceTravelerId";
 
-export async function initializeTravelerAuth() {
-  try {
-    const user = auth.currentUser || await signInTraveler();
-    console.log("Traveler signed in:", user.uid);
-    return { uid: user.uid, isAnonymous: user.isAnonymous };
-  } catch (error) {
-    console.error("Firebase anonymous sign-in failed:", error);
-    throw error;
+function createDeviceId() {
+  if (crypto && crypto.randomUUID) {
+    return crypto.randomUUID();
   }
+
+  return `traveler-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
+/**
+ * Gives each phone/browser a stable traveler ID.
+ * This avoids passwords and avoids requiring Firebase Auth setup.
+ */
+export async function initializeTravelerAuth() {
+  let uid = localStorage.getItem(DEVICE_ID_KEY);
+
+  if (!uid) {
+    uid = createDeviceId();
+    localStorage.setItem(DEVICE_ID_KEY, uid);
+  }
+
+  console.log("Traveler device identity ready:", uid);
+
+  return {
+    uid,
+    isAnonymous: true,
+    provider: "local-device"
+  };
 }
 
 export function getCurrentTravelerId() {
-  return auth.currentUser ? auth.currentUser.uid : null;
+  return localStorage.getItem(DEVICE_ID_KEY);
 }
